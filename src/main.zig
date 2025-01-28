@@ -1,4 +1,6 @@
 const std = @import("std");
+const Lexer = @import("lexer/main.zig").Lexer;
+const LexerUtils = @import("lexer/utils.zig");
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -24,27 +26,54 @@ pub fn replStart() !void {
     while (true) {
         std.debug.print(">> ", .{});
         if (try std.io.getStdIn().reader().readUntilDelimiterOrEof(buffer[0..], '\n')) |input| {
-            std.debug.print("{s}\n", .{input});
+            var lexer = Lexer.init(allocator, input, "repl", "repl");
+            defer lexer.deinit();
+
+            const tokens = try lexer.tokenize();
+            defer allocator.free(tokens);
+
+            const output = try LexerUtils.tokensToString(allocator, tokens);
+            defer allocator.free(output);
+
+            std.debug.print("\n{s}\n", .{output});
         } else {
             break;
         }
     }
 }
 
-pub fn getComputerName(allocator: std.mem.Allocator) ![]const u8 {
-    var buffer: [std.posix.HOST_NAME_MAX]u8 = undefined;
-    const hostname = try std.posix.gethostname(&buffer);
-    return try allocator.dupe(u8, hostname);
-}
-
 pub fn processInputSourceFile(file_path: []const u8) !void {
+    const allocator = std.heap.page_allocator;
+
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
+
+    const absolute_path = try std.fs.cwd().realpathAlloc(allocator, file_path);
+    defer allocator.free(absolute_path);
+
+    const dir_path = std.fs.path.dirname(absolute_path) orelse ".";
+    const file_name = std.fs.path.basename(absolute_path);
 
     const file_size = try file.getEndPos();
     const buffer = try std.heap.page_allocator.alloc(u8, file_size);
     defer std.heap.page_allocator.free(buffer);
 
     _ = try file.readAll(buffer);
-    std.debug.print("\n{s}\n", .{buffer});
+
+    var lexer = Lexer.init(allocator, buffer, file_name, dir_path);
+    defer lexer.deinit();
+
+    const tokens = try lexer.tokenize();
+    defer allocator.free(tokens);
+
+    const output = try LexerUtils.tokensToString(allocator, tokens);
+    defer allocator.free(output);
+
+    std.debug.print("\n{s}\n", .{output});
+}
+
+pub fn getComputerName(allocator: std.mem.Allocator) ![]const u8 {
+    var buffer: [std.posix.HOST_NAME_MAX]u8 = undefined;
+    const hostname = try std.posix.gethostname(&buffer);
+    return try allocator.dupe(u8, hostname);
 }
