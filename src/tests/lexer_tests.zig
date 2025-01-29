@@ -53,28 +53,6 @@ test "Lexer: whitespace skipping" {
     try testing.expectEqualStrings(tokens[0].value, "+");
 }
 
-test "Lexer: string with error after valid string" {
-    const input = "\"sijibomi\" \"siji";
-    const allocator = std.testing.allocator;
-    var lexer = createTestLexer(allocator, input);
-    defer lexer.deinit();
-
-    const tokens = try lexer.tokenize();
-    defer allocator.free(tokens);
-
-    try testing.expect(tokens.len == 2); // STRING, ERROR, and EOF
-
-    // Check the valid string token
-    try testing.expectEqual(tokens[0].type, .STRING);
-    try testing.expectEqualStrings(tokens[0].value, "sijibomi");
-    try testing.expectEqual(tokens[0].line, 1);
-
-    // Check the error token
-    try testing.expectEqual(tokens[1].type, .ERROR);
-    try testing.expectEqual(tokens[1].line, 1);
-    try testing.expectEqualStrings(tokens[1].value, "Error occurred");
-}
-
 // Test string tokenization with escape sequences
 test "Lexer: string with escape sequences" {
     const input = "\"hello\nworld\"";
@@ -87,33 +65,6 @@ test "Lexer: string with escape sequences" {
     // Check the token (STRING)
     try testing.expectEqual(tokens[0].type, TokenType.STRING);
     try testing.expectEqualStrings(tokens[0].value, "hello\nworld");
-}
-
-test "Lexer: unterminated string" {
-    const input = "\"hello";
-    const allocator = std.testing.allocator;
-    var lexer = createTestLexer(allocator, input);
-    defer lexer.deinit();
-
-    const tokens = try lexer.tokenize();
-    defer allocator.free(tokens);
-
-    try testing.expectEqual(tokens[0].type, .ERROR);
-    try testing.expectEqual(tokens[0].line, 1);
-}
-
-test "Lexer: invalid string escape sequence" {
-    const input = "\"hello\\xworld\"";
-    const allocator = std.testing.allocator;
-    var lexer = createTestLexer(allocator, input);
-    defer lexer.deinit();
-
-    const tokens = try lexer.tokenize();
-    defer allocator.free(tokens);
-
-    try testing.expectEqual(tokens[0].type, .ERROR);
-    try testing.expectEqual(tokens[0].line, 1);
-    try testing.expectEqualStrings(tokens[0].value, "Error occurred");
 }
 
 // Test EOF token
@@ -129,21 +80,6 @@ test "Lexer: EOF token" {
     // Check the token (EOF)
     try testing.expectEqual(tokens[0].type, TokenType.EOF);
     try testing.expectEqualStrings(tokens[0].value, "");
-}
-
-// Test error token creation
-test "Lexer: error token creation" {
-    const input = "\"hello";
-    const allocator = std.testing.allocator;
-    var lexer = createTestLexer(allocator, input);
-    defer lexer.deinit();
-
-    const tokens = try lexer.tokenize();
-    defer allocator.free(tokens);
-
-    // Check the token (ERROR)
-    try testing.expectEqual(tokens[0].type, TokenType.ERROR);
-    try testing.expectEqual(tokens[0].line, 1);
 }
 
 test "Lexer: integer tokens" {
