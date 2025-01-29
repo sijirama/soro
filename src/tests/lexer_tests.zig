@@ -147,7 +147,7 @@ test "Lexer: error token creation" {
 }
 
 test "Lexer: integer tokens" {
-    const input = "123 0 -456";
+    const input = "123 0 - 456";
     const allocator = std.testing.allocator;
     var lexer = createTestLexer(allocator, input);
     defer lexer.deinit();
@@ -155,15 +155,15 @@ test "Lexer: integer tokens" {
     const tokens = try lexer.tokenize();
     defer allocator.free(tokens);
 
-    try testing.expectEqual(tokens[0].type, TokenType.INT);
+    try testing.expectEqual(tokens[0].type, TokenType.INTEGER);
     try testing.expectEqualStrings(tokens[0].value, "123");
 
-    try testing.expectEqual(tokens[1].type, TokenType.INT);
+    try testing.expectEqual(tokens[1].type, TokenType.INTEGER);
     try testing.expectEqualStrings(tokens[1].value, "0");
 
     try testing.expectEqual(tokens[2].type, TokenType.MINUS);
     try testing.expectEqualStrings(tokens[2].value, "-");
 
-    try testing.expectEqual(tokens[3].type, TokenType.INT);
+    try testing.expectEqual(tokens[3].type, TokenType.INTEGER);
     try testing.expectEqualStrings(tokens[3].value, "456");
 }

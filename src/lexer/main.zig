@@ -1,5 +1,6 @@
 const std = @import("std");
 const Token = @import("../token/main.zig").Token;
+const Keywords = @import("../token/main.zig").Keywords;
 const TokenType = @import("../token/main.zig").TokenType;
 const LexerError = @import("./error.zig").LexerError;
 const LexerErrorUtils = @import("./error.zig");
@@ -72,6 +73,12 @@ pub const Lexer = struct {
                 self.advancePosition(1);
                 return token;
             },
+            '-' => {
+                const token = self.createToken(.MINUS, self.input[self.position .. self.position + 1]);
+                self.advancePosition(1);
+                return token;
+            },
+
             ';' => {
                 const token = self.createToken(.SEMICOLON, self.input[self.position .. self.position + 1]);
                 self.advancePosition(1);
@@ -119,49 +126,63 @@ pub const Lexer = struct {
                 return token;
             },
 
-            '"' => {
-                self.advancePosition(1); // INFO: Move past opening quote
-                var string = std.ArrayList(u8).init(self.allocator);
-                defer string.deinit();
-
-                while (self.position < self.input.len) {
-                    const currentChar = self.input[self.position];
-
-                    // INFO: Check for closing quote
-                    if (currentChar == '"') {
-                        self.advancePosition(1); // Move past closing quote
-
-                        // Create and append the token for the string
-                        const tokenValue = try string.toOwnedSlice(); // Take ownership of memory
-                        //errdefer self.allocator.free(tokenValue); // Free on error
-                        const token = self.createToken(.STRING, tokenValue);
-                        try self.stringAllocations.append(tokenValue);
-                        return token; // Return the token, clean up `string` automatically via defer.
-                    }
-
-                    // Handle escape sequences
-                    if (currentChar == '\\') {
-                        self.advancePosition(1); // Skip the backslash
-
-                        if (self.position >= self.input.len) {
-                            return LexerError.InvalidString;
-                        }
-
-                        const escapedChar = self.input[self.position];
-                        switch (escapedChar) {
-                            'n' => try string.append('\n'), // Handle newline
-                            't' => try string.append('\t'), // Handle tab
-                            '\\', '"' => try string.append(escapedChar), // Handle backslash and quote
-                            else => return LexerError.InvalidString,
-                        }
-                    } else {
-                        try string.append(currentChar);
-                    }
-
-                    self.advancePosition(1); // Move to next character
+            '*' => {
+                const token = self.createToken(.ASTERISK, self.input[self.position .. self.position + 1]);
+                self.advancePosition(1);
+                return token;
+            },
+            '/' => {
+                const token = self.createToken(.SLASH, self.input[self.position .. self.position + 1]);
+                self.advancePosition(1);
+                return token;
+            },
+            '<' => {
+                const token = self.createToken(.LESS_THAN, self.input[self.position .. self.position + 1]);
+                self.advancePosition(1);
+                return token;
+            },
+            '>' => {
+                const token = self.createToken(.GREATER_THAN, self.input[self.position .. self.position + 1]);
+                self.advancePosition(1);
+                return token;
+            },
+            '=' => {
+                if (self.peekNextChar() == '=') {
+                    const token = self.createToken(.EQUAL, self.input[self.position .. self.position + 2]);
+                    self.advancePosition(2);
+                    return token;
+                } else {
+                    const token = self.createToken(.ASSIGN, self.input[self.position .. self.position + 1]);
+                    self.advancePosition(1);
+                    return token;
                 }
+            },
+            '!' => {
+                if (self.peekNextChar() == '=') {
+                    const token = self.createToken(.NOT_EQUAL, self.input[self.position .. self.position + 2]);
+                    self.advancePosition(2);
+                    return token;
+                } else {
+                    const token = self.createToken(.BANG, self.input[self.position .. self.position + 1]);
+                    self.advancePosition(1);
+                    return token;
+                }
+            },
 
-                return LexerError.UnterminatedString;
+            '"' => return self.readString(),
+
+            '0'...'9' => return self.readNumber(),
+
+            'a'...'z', 'A'...'Z', '_' => {
+                const start = self.position;
+                while (self.position < self.input.len and isIdentChar(self.input[self.position])) {
+                    self.advancePosition(1);
+                }
+                const ident = self.input[start..self.position];
+
+                // Check if it's a keyword using the token module's Keywords
+                const tokenType = Keywords.getKeywordToken(ident) orelse .IDENT;
+                return self.createToken(tokenType, ident);
             },
 
             else => {
@@ -182,6 +203,95 @@ pub const Lexer = struct {
             .fileName = self.fileName,
             .fileDirectory = self.fileDirectory,
         };
+    }
+
+    fn peekNextChar(self: *Lexer) ?u8 {
+        if (self.position + 1 >= self.input.len) return null;
+        return self.input[self.position + 1];
+    }
+
+    fn isIdentChar(ch: u8) bool {
+        return (ch >= 'a' and ch <= 'z') or
+            (ch >= 'A' and ch <= 'Z') or
+            (ch >= '0' and ch <= '9') or
+            ch == '_';
+    }
+
+    fn readNumber(self: *Lexer) !Token {
+        const start = self.position;
+        var hasDecimal = false;
+
+        // Read integer part
+        while (self.position < self.input.len and isDigit(self.input[self.position])) {
+            self.advancePosition(1);
+        }
+
+        // Check for decimal point
+        if (self.position < self.input.len and self.input[self.position] == '.') {
+            // Look ahead to ensure there's a digit after the decimal
+            if (self.position + 1 < self.input.len and isDigit(self.input[self.position + 1])) {
+                hasDecimal = true;
+                self.advancePosition(1); // consume the decimal point
+
+                // Read decimal part
+                while (self.position < self.input.len and isDigit(self.input[self.position])) {
+                    self.advancePosition(1);
+                }
+            }
+        }
+
+        const numberStr = self.input[start..self.position];
+        return self.createToken(if (hasDecimal) .FLOAT else .INTEGER, numberStr);
+    }
+
+    fn readString(self: *Lexer) !Token {
+        self.advancePosition(1); // Skip opening quote
+        var string = std.ArrayList(u8).init(self.allocator);
+        defer string.deinit();
+
+        while (self.position < self.input.len) {
+            const ch = self.input[self.position];
+
+            if (ch == '"') {
+                self.advancePosition(1); // Skip closing quote
+                const tokenValue = try string.toOwnedSlice();
+                try self.stringAllocations.append(tokenValue);
+                return self.createToken(.STRING, tokenValue);
+            }
+
+            if (ch == '\\') {
+                try self.handleEscapeSequence(&string);
+            } else {
+                try string.append(ch);
+                self.advancePosition(1);
+            }
+        }
+
+        return LexerError.UnterminatedString;
+    }
+
+    fn handleEscapeSequence(self: *Lexer, string: *std.ArrayList(u8)) !void {
+        self.advancePosition(1); // Skip backslash
+
+        if (self.position >= self.input.len) {
+            return LexerError.InvalidString;
+        }
+
+        const escapedChar = self.input[self.position];
+        const mappedChar: u8 = switch (escapedChar) {
+            'n' => '\n',
+            't' => '\t',
+            'r' => '\r',
+            '\\', '"' => escapedChar,
+            else => return LexerError.InvalidString,
+        };
+
+        try string.append(mappedChar);
+        self.advancePosition(1);
+    }
+
+    fn isDigit(ch: u8) bool {
+        return ch >= '0' and ch <= '9';
     }
 
     // Helper to track line and column numbers
