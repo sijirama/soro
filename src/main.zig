@@ -20,7 +20,7 @@ pub fn replStart() !void {
     defer allocator.free(username);
 
     std.debug.print("Welcome to soro, {s}!\n", .{username});
-    std.debug.print("How far? Wetin you wan do today?\n", .{});
+    std.debug.print("How far? Wetin you wan do today?\n\n", .{});
 
     var buffer: [256]u8 = undefined;
     while (true) {
@@ -35,7 +35,9 @@ pub fn replStart() !void {
             const output = try LexerUtils.tokensToString(allocator, tokens);
             defer allocator.free(output);
 
-            std.debug.print("\n{s}\n", .{output});
+            if (output.len > 0) {
+                std.debug.print("\n{s}\n", .{output});
+            }
         } else {
             break;
         }
