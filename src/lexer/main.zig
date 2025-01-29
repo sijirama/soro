@@ -1,6 +1,7 @@
 const std = @import("std");
 const Token = @import("../token/main.zig").Token;
 const Keywords = @import("../token/main.zig").Keywords;
+const BuiltinTypes = @import("../token/main.zig").BuiltinTypes;
 const TokenType = @import("../token/main.zig").TokenType;
 const LexerError = @import("./error.zig").LexerError;
 const LexerErrorUtils = @import("./error.zig");
@@ -180,8 +181,11 @@ pub const Lexer = struct {
                 }
                 const ident = self.input[start..self.position];
 
-                // Check if it's a keyword using the token module's Keywords
-                const tokenType = Keywords.getKeywordToken(ident) orelse .IDENT;
+                // Check if it's a keyword or type using the token module's Keywords
+                const tokenType = Keywords.getKeywordToken(ident) orelse
+                    BuiltinTypes.getBuiltinTypeToken(ident) orelse
+                    .IDENT;
+
                 return self.createToken(tokenType, ident);
             },
 

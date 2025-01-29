@@ -41,6 +41,16 @@ pub const TokenType = enum {
     EQUAL, // ==
     NOT_EQUAL, // !=
 
+    // builtin types
+    INTEGER_TYPE,
+    STRING_TYPE,
+    BOOL_TYPE,
+    FLOAT_TYPE,
+    INTERFACE_TYPE,
+    VOID_TYPE,
+    ANY_TYPE,
+    ERROR_TYPE,
+
     // keywords
     OYA, // function
     TRUE, // true
@@ -49,6 +59,9 @@ pub const TokenType = enum {
     COMOT, // return from function
     IF,
     ELSE,
+    AND, // instead of && which i absolutely hate even more
+    OR, // instead of || which i hate with mylife
+    OR_ELSE, // dubbing zigs orelse for inline conditionals
 };
 
 //WARN: comptimestringmap has been moved
@@ -65,6 +78,11 @@ const keywordsSlice: []const KVType = &.{
     .{ "comot", .COMOT },
     .{ "true", .TRUE },
     .{ "false", .FALSE },
+    .{ "if", .IF },
+    .{ "else", .ELSE },
+    .{ "and", .AND },
+    .{ "or", .OR },
+    .{ "orelse", .OR_ELSE },
 };
 
 pub const Keywords = struct {
@@ -72,5 +90,27 @@ pub const Keywords = struct {
 
     pub fn getKeywordToken(ident: []const u8) ?TokenType {
         return keywords.get(ident);
+    }
+};
+
+const BuiltinKVType = struct { []const u8, TokenType };
+const BuiltinTypeMap = std.StaticStringMap(TokenType);
+
+const builtinTypesSlice: []const BuiltinKVType = &.{
+    .{ "int", .INTEGER_TYPE },
+    .{ "string", .STRING_TYPE },
+    .{ "bool", .BOOL_TYPE },
+    .{ "float", .FLOAT_TYPE },
+    .{ "interface", .INTERFACE_TYPE },
+    .{ "void", .VOID_TYPE },
+    .{ "any", .ANY_TYPE },
+    .{ "error", .ERROR_TYPE },
+};
+
+pub const BuiltinTypes = struct {
+    const builtinTypes = BuiltinTypeMap.initComptime(builtinTypesSlice);
+
+    pub fn getBuiltinTypeToken(ident: []const u8) ?TokenType {
+        return builtinTypes.get(ident);
     }
 };
