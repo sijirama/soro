@@ -52,11 +52,12 @@ pub const TokenType = enum {
     ERROR_TYPE,
 
     // keywords
+    ABEG, // variable decralation
+    LOCK, // make declarations immutable e.g abeg lock name := "sijibomi"
     OYA, // function
+    COMOT, // return from function
     TRUE, // true
     FALSE, // false
-    ABEG, // variable decralation
-    COMOT, // return from function
     IF,
     ELSE,
     AND, // instead of && which i absolutely hate even more
@@ -74,6 +75,7 @@ const ComtimeMap = std.StaticStringMap(TokenType);
 
 const keywordsSlice: []const KVType = &.{
     .{ "abeg", .ABEG },
+    .{ "lock", .LOCK },
     .{ "oya", .OYA },
     .{ "comot", .COMOT },
     .{ "true", .TRUE },
