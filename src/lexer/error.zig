@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const LexerError = error{ InvalidString, UnterminatedString } || std.mem.Allocator.Error;
+pub const LexerError = error{ InvalidString, UnterminatedString, UnterminatedComment } || std.mem.Allocator.Error;
 
 // Define ANSI color codes
 const Color = struct {

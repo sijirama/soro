@@ -132,11 +132,9 @@ pub const Lexer = struct {
                 self.advancePosition(1);
                 return token;
             },
-            '/' => {
-                const token = self.createToken(.SLASH, self.input[self.position .. self.position + 1]);
-                self.advancePosition(1);
-                return token;
-            },
+
+            '/' => return self.readSlashOrComment(),
+
             '<' => {
                 const token = self.createToken(.LESS_THAN, self.input[self.position .. self.position + 1]);
                 self.advancePosition(1);
@@ -214,6 +212,13 @@ pub const Lexer = struct {
         return self.input[self.position + 1];
     }
 
+    fn peekNextChars(self: *Lexer, offset: usize) ?u8 {
+        if (self.position + offset >= self.input.len) {
+            return null;
+        }
+        return self.input[self.position + offset];
+    }
+
     fn isIdentChar(ch: u8) bool {
         return (ch >= 'a' and ch <= 'z') or
             (ch >= 'A' and ch <= 'Z') or
@@ -272,6 +277,39 @@ pub const Lexer = struct {
         }
 
         return LexerError.UnterminatedString;
+    }
+
+    fn readSlashOrComment(self: *Lexer) !Token {
+        const start = self.position;
+
+        // Single-line comment
+        if (self.peekNextChar() == '/') {
+            self.advancePosition(1); // Consume the second '/'
+            while (self.position < self.input.len and self.input[self.position] != '\n') {
+                self.advancePosition(1); // Consume until end of line
+            }
+            // Include the last character before the newline
+            const value = self.input[start + 2 .. self.position];
+            return self.createToken(.COMMENT, value);
+        }
+
+        // Multi-line comment
+        if (self.peekNextChar() == '*') {
+            self.advancePosition(1); // Consume the '*'
+            while (self.position < self.input.len) {
+                if (self.input[self.position] == '*' and self.peekNextChar() == '/') {
+                    self.advancePosition(2); // Consume '*/'
+                    const value = self.input[start + 2 .. self.position - 2];
+                    return self.createToken(.COMMENT, value);
+                }
+                self.advancePosition(1); // Consume characters until '*/' is found
+            }
+            return error.UnterminatedComment;
+        }
+
+        // Standalone '/'
+        self.advancePosition(1); // Consume the '/'
+        return self.createToken(.SLASH, self.input[start..self.position]);
     }
 
     fn handleEscapeSequence(self: *Lexer, string: *std.ArrayList(u8)) !void {

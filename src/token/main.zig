@@ -37,6 +37,7 @@ pub const TokenType = enum {
     RBRACE, // }
     LBRACKET, // [
     RBRACKET, // ]
+    COMMENT, // // or /**/
 
     EQUAL, // ==
     NOT_EQUAL, // !=

@@ -104,6 +104,34 @@ test "Lexer: integer tokens" {
     try testing.expectEqualStrings(tokens[3].value, "456");
 }
 
+test "Lexer: comments" {
+    const input =
+        \\// This is a single-line comment
+        \\/* This is a
+        \\   multi-line comment */
+        \\42 // Another single-line comment
+    ;
+    const allocator = std.testing.allocator;
+    var lexer = createTestLexer(allocator, input);
+    defer lexer.deinit();
+
+    const tokens = try lexer.tokenize();
+    defer allocator.free(tokens);
+
+    // Check the tokens
+    try testing.expectEqual(tokens[0].type, TokenType.COMMENT);
+    try testing.expectEqualStrings(tokens[0].value, " This is a single-line comment");
+
+    try testing.expectEqual(tokens[1].type, TokenType.COMMENT);
+    try testing.expectEqualStrings(tokens[1].value, " This is a\n   multi-line comment ");
+
+    try testing.expectEqual(tokens[2].type, TokenType.INTEGER);
+    try testing.expectEqualStrings(tokens[2].value, "42");
+
+    try testing.expectEqual(tokens[3].type, TokenType.COMMENT);
+    try testing.expectEqualStrings(tokens[3].value, " Another single-line comment");
+}
+
 test "Lexer: Final Test" {
 
     // Note: Using \\ for line continuations in Zig multiline strings
@@ -114,7 +142,7 @@ test "Lexer: Final Test" {
         \\    comot x + y;
         \\}
         \\abeg result int = add (5, 10);
-        \\!-/*5;
+        \\!-/ or *5;
         \\5 < 10 > 5;
         \\if (5 < 10) {
         \\    comot true;
@@ -143,6 +171,7 @@ test "Lexer: Final Test" {
         \\}
         \\abeg stuff interface = {};
         \\abeg numbers = [1.5, 2.5, 3.5];
+        \\//fuck everyone for realll
     ;
 
     const TestToken = struct {
@@ -204,6 +233,7 @@ test "Lexer: Final Test" {
         .{ .expected_type = .BANG, .expected_literal = "!" },
         .{ .expected_type = .MINUS, .expected_literal = "-" },
         .{ .expected_type = .SLASH, .expected_literal = "/" },
+        .{ .expected_type = .OR, .expected_literal = "or" },
         .{ .expected_type = .ASTERISK, .expected_literal = "*" },
         .{ .expected_type = .INTEGER, .expected_literal = "5" },
         .{ .expected_type = .SEMICOLON, .expected_literal = ";" },
@@ -366,6 +396,7 @@ test "Lexer: Final Test" {
         .{ .expected_type = .FLOAT, .expected_literal = "3.5" },
         .{ .expected_type = .RBRACKET, .expected_literal = "]" },
         .{ .expected_type = .SEMICOLON, .expected_literal = ";" },
+        .{ .expected_type = .COMMENT, .expected_literal = "fuck everyone for realll" },
 
         .{ .expected_type = .EOF, .expected_literal = "" },
     };
