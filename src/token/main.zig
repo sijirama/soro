@@ -116,3 +116,22 @@ pub const BuiltinTypes = struct {
         return builtinTypes.get(ident);
     }
 };
+
+pub const Type = struct {
+    token_type: TokenType,
+    name: []const u8,
+
+    pub fn fromTokenType(token_type: TokenType) ?Type {
+        return switch (token_type) {
+            .INTEGER_TYPE => Type{ .token_type = .INTEGER_TYPE, .name = "int" },
+            .STRING_TYPE => Type{ .token_type = .STRING_TYPE, .name = "string" },
+            .BOOL_TYPE => Type{ .token_type = .BOOL_TYPE, .name = "bool" },
+            .FLOAT_TYPE => Type{ .token_type = .FLOAT_TYPE, .name = "float" },
+            .INTERFACE_TYPE => Type{ .token_type = .INTERFACE_TYPE, .name = "interface" },
+            .VOID_TYPE => Type{ .token_type = .VOID_TYPE, .name = "void" },
+            .ANY_TYPE => Type{ .token_type = .ANY_TYPE, .name = "any" },
+            .ERROR_TYPE => Type{ .token_type = .ERROR_TYPE, .name = "error" },
+            else => null,
+        };
+    }
+};
