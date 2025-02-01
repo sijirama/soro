@@ -5,11 +5,14 @@ const Type = @import("../token/main.zig").Type;
 //Root node of the ast
 pub const Program = struct {
     statements: std.ArrayList(Statement),
+    allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) Program {
-        return Program{
-            .statements = std.ArrayList(Statement).init(allocator),
-        };
+        return Program{ .statements = std.ArrayList(Statement).init(allocator), .allocator = allocator };
+    }
+
+    pub fn deinit(self: *Program) void {
+        self.statements.deinit();
     }
 
     pub fn tokenLiteral(self: Program) []const u8 {
