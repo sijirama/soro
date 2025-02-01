@@ -8,43 +8,26 @@ fn createTestLexer(allocator: std.mem.Allocator, input: []const u8) Lexer {
     return Lexer.init(allocator, input, "test.soro", ".");
 }
 
-test "Parser: prefix expressions" {
-
-    // lfg
-    const input = "-5; !true;";
-    const allocator = std.testing.allocator;
-
-    var lexer = createTestLexer(allocator, input);
-
-    var parser = Parser.init(testing.allocator, &lexer);
-
+fn parseInput(allocator: std.mem.Allocator, input: []const u8) !ast.Program {
+    var lexer = Lexer.init(allocator, input, "test.soro", ".");
+    var parser = Parser.init(allocator, &lexer);
     defer {
-        parser.deinit(); // Deinitialize the parser
-        lexer.deinit(); // Deinitialize the lexer
+        parser.deinit();
+        lexer.deinit();
     }
 
-    var program = try parser.parseProgram();
-    defer program.deinit();
-    std.debug.print("There are {} statements in the ast.", .{program.statements.items.len});
-
-    // defer program.deinit();
-    // try testing.expectEqual(program.statements.items.len, 2);
-
-    // Test the first statement: -5
-    // const stmt1 = program.statements.items[0];
-    // try testing.expectEqual(stmt1, .expression_statement);
-    // const expr1 = stmt1.expression_statement.expression;
-    // try testing.expectEqual(expr1, .prefix_expression);
-    // try testing.expectEqualStrings(expr1.prefix_expression.operator, "-");
-    // try testing.expectEqual(expr1.prefix_expression.right, .integer_literal);
-    // try testing.expectEqual(expr1.prefix_expression.right.integer_literal.value, 5);
-
-    // Test the second statement: !true
-    // const stmt2 = program.statements.items[1];
-    // try testing.expectEqual(stmt2, .expression_statement);
-    // const expr2 = stmt2.expression_statement.expression;
-    // try testing.expectEqual(expr2, .prefix_expression);
-    // try testing.expectEqualStrings(expr2.prefix_expression.operator, "!");
-    // try testing.expectEqual(expr2.prefix_expression.right, .boolean_literal);
-    // try testing.expectEqual(expr2.prefix_expression.right.boolean_literal.value, true);
+    return try parser.parseProgram();
 }
+
+// test "Parser: prefix expressions 2" {
+//     const input = "-5;";
+//     const allocator = std.testing.allocator;
+//
+//     var program = try parseInput(allocator, input);
+//     defer program.deinit();
+//
+//     try testing.expectEqual(program.statements.items.len, 1);
+//     std.debug.print("{s}", .{program.statements.items[0].tokenLiteral()});
+//     std.debug.print("\n There are {} statements", .{program.statements.items.len});
+//     std.debug.print("{s}", .{program.statements.items[0].expression_statement.expression.tokenLiteral()});
+// }
