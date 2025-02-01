@@ -31,6 +31,7 @@ pub const Expression = union(enum) {
     integer_literal: IntegerLiteral,
     boolean_literal: BooleanLiteral,
     string_literal: StringLiteral,
+    float_literal: FloatLiteral, // Add this
 
     prefix_expression: PrefixExpression,
     infix_expression: InfixExpression,
@@ -39,12 +40,25 @@ pub const Expression = union(enum) {
         return switch (self) {
             .identifier => |id| id.tokenLiteral(),
             .integer_literal => |lit| lit.tokenLiteral(),
+            .float_literal => |lit| lit.tokenLiteral(),
             .boolean_literal => |lit| lit.tokenLiteral(),
             .string_literal => |lit| lit.tokenLiteral(),
             .prefix_expression => |expr| expr.tokenLiteral(),
             .infix_expression => |expr| expr.tokenLiteral(),
+            // else => {
+            //     std.debug.print("\nShit sha went down idk:\n", .{});
+            //     return "Failed to token literal this bitch";
+            // },
         };
     }
+
+    // pub fn format(self: Expression, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+    //     switch (self) {
+    //         .prefix_expression => |expr| {
+    //             try writer.print("({s}{s})", .{ expr.operator, expr.right.tokenLiteral() });
+    //         },
+    //     }
+    // }
 };
 
 pub const Statement = union(enum) {
@@ -75,6 +89,15 @@ pub const IntegerLiteral = struct {
     value: i64,
 
     pub fn tokenLiteral(self: IntegerLiteral) []const u8 {
+        return self.token.value;
+    }
+};
+
+pub const FloatLiteral = struct {
+    token: Token,
+    value: f64,
+
+    pub fn tokenLiteral(self: FloatLiteral) []const u8 {
         return self.token.value;
     }
 };

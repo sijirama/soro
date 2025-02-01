@@ -7,6 +7,7 @@ const std = @import("std");
 const Lexer = @import("../lexer/main.zig").Lexer;
 const Token = @import("../token/main.zig").Token;
 const TokenType = @import("../token/main.zig").TokenType;
+const Type = @import("../token/main.zig").Type;
 const ast = @import("../ast/ast.zig");
 
 const Precedence = enum(u8) {
@@ -55,6 +56,7 @@ pub const Parser = struct {
         // register prefix functions
         parser.registerPrefix(TokenType.IDENT, Parser.parseIdentifier);
         parser.registerPrefix(TokenType.INTEGER, Parser.parseIntegerLiteral);
+        parser.registerPrefix(TokenType.FLOAT, Parser.parseFloatLiteral);
         parser.registerPrefix(TokenType.STRING, Parser.parseStringLiteral);
         parser.registerPrefix(TokenType.TRUE, Parser.parseBooleanLiteral);
         parser.registerPrefix(TokenType.FALSE, Parser.parseBooleanLiteral);
@@ -192,7 +194,7 @@ pub const Parser = struct {
             .token = self.current_token, // The 'abeg' token
             .name = undefined, // Will be set below
             .value = undefined, // Will be set below
-            //.type_annotation = null, // Default to no type annotation TODO:
+            .type_annotation = null, // Default to no type annotation TODO:
             .is_locked = false, // Default to mutable
             .is_inferred = false, // Default to explicit type
         };
@@ -213,6 +215,20 @@ pub const Parser = struct {
             .token = self.current_token,
             .value = self.current_token.value,
         };
+
+        // Check if the next token is a type (e.g., 'string', 'int')
+        if (self.peek_token.type != .COLON and self.peek_token.type != .ASSIGN) {
+            // The next token might be a type identifier
+            self.nextToken(); // Consume the type identifier
+
+            // Convert the token type to a Type
+            if (Type.fromTokenType(self.current_token.type)) |type_annotation| {
+                stmt.type_annotation = type_annotation;
+            } else {
+                std.debug.print("Error: Invalid type annotation '{s}' at line {}\n", .{ self.current_token.value, self.current_token.line });
+                return null; // Error: Invalid type
+            }
+        }
 
         // Check for type inference (e.g., ':=')
         if (self.peek_token.type == .COLON) {
@@ -244,14 +260,22 @@ pub const Parser = struct {
         self.nextToken();
 
         // Parse the expression on the right-hand side of the assignment
-        stmt.value = self.parseExpression(.LOWEST);
+        //FORMER: stmt.value = self.parseExpression(.LOWEST);
+        if (self.parseExpression(.LOWEST)) |expr| {
+            stmt.value = expr;
+        } else {
+            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
+            return null; // Avoid returning a broken statement
+        }
 
         // Expect a semicolon at the end of the statement
         if (self.peek_token.type == .SEMICOLON) {
             self.nextToken(); // Consume the semicolon
         }
 
-        return ast.Statement{ .abeg_statement = stmt };
+        const result = ast.Statement{ .abeg_statement = stmt };
+
+        return result;
     }
 
     pub fn parseComotStatement(self: *Parser) ?ast.Statement {
@@ -261,7 +285,14 @@ pub const Parser = struct {
         };
 
         self.nextToken();
-        stmt.value = self.parseExpression(.LOWEST);
+
+        //stmt.value = self.parseExpression(.LOWEST);
+        if (self.parseExpression(.LOWEST)) |expr| {
+            stmt.value = expr;
+        } else {
+            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
+            return null; // Avoid returning a broken statement
+        }
 
         if (self.peek_token.type == .SEMICOLON) {
             self.nextToken();
@@ -271,51 +302,48 @@ pub const Parser = struct {
     }
 
     pub fn parseExpressionStatement(self: *Parser) ?ast.Statement {
-        // Create the ExpressionStatement node
-        var stmt = ast.ExpressionStatement{
-            .token = self.current_token, // The first token of the expression
-            .expression = undefined, // Will be set below
+        const expr = self.parseExpression(.LOWEST) orelse {
+            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
+            return null;
         };
 
-        // Parse the expression
-        stmt.expression = self.parseExpression(.LOWEST);
+        const stmt = ast.ExpressionStatement{
+            .token = self.current_token,
+            .expression = expr,
+        };
 
-        // Optionally consume a semicolon (if present)
         if (self.peek_token.type == .SEMICOLON) {
-            self.nextToken(); // Consume the semicolon
+            self.nextToken();
         }
 
         return ast.Statement{ .expression_statement = stmt };
     }
 
-    pub fn parseExpression(self: *Parser, precedence: Precedence) *ast.Expression {
-        // Get the prefix parsing function for the current token type
+    pub fn parseExpression(self: *Parser, precedence: Precedence) ?*ast.Expression {
         const prefixFn = self.prefixParseFns.get(self.current_token.type) orelse {
-            const error_msg = std.fmt.allocPrint(self.allocator, "No prefix parse function for {any}", .{self.current_token.type}) catch return self.createDummyExpression();
-            self.errors.append(error_msg) catch return self.createDummyExpression();
-            return self.createDummyExpression();
+            const error_msg = std.fmt.allocPrint(self.allocator, "No prefix parse function for '{s}' at line {}, column {}", .{
+                self.current_token.value,
+                self.current_token.line,
+                self.current_token.column,
+            }) catch return null;
+            self.errors.append(error_msg) catch {};
+            return null; // Return null instead of dummy
         };
 
-        // Parse the left-hand side of the expression
         var leftExpr = prefixFn(self);
 
-        // Continue parsing while the next token has higher precedence
-        while (self.peek_token.type != .SEMICOLON and @intFromEnum(precedence) < @intFromEnum(self.peekPrecedence())) {
-            const infixFn = self.infixParseFns.get(self.peek_token.type) orelse {
-                return leftExpr;
-            };
-
-            // Advance to the next token
+        while (self.peek_token.type != .SEMICOLON and
+            @intFromEnum(precedence) < @intFromEnum(self.peekPrecedence()))
+        {
+            const infixFn = self.infixParseFns.get(self.peek_token.type) orelse break;
             self.nextToken();
-
-            // Parse the right-hand side of the expression
             leftExpr = infixFn(self, leftExpr);
         }
 
         return leftExpr;
     }
 
-    /// Helper function to create a dummy expression
+    // Helper function to create a dummy expression
     fn createDummyExpression(self: *Parser) *ast.Expression {
         const dummy = self.allocator.create(ast.Expression) catch unreachable;
         dummy.* = .{ .integer_literal = ast.IntegerLiteral{ .token = self.current_token, .value = 0 } };
@@ -326,10 +354,6 @@ pub const Parser = struct {
     // Prefix Functions
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // pub fn parseIdentifier(self: *Parser) *ast.Expression {
-    //     return &ast.Identifier{ .token = self.current_token, .value = self.current_token.value };
-    // }
-
     pub fn parseIdentifier(self: *Parser) *ast.Expression {
         const identifier = ast.Identifier{
             .token = self.current_token,
@@ -339,6 +363,8 @@ pub const Parser = struct {
         // Allocate memory for the Expression union
         const expr = self.allocator.create(ast.Expression) catch unreachable;
         expr.* = .{ .identifier = identifier }; // Wrap the Identifier in an Expression
+
+        self.allocated_expressions.append(expr) catch unreachable;
 
         return expr;
     }
@@ -360,6 +386,31 @@ pub const Parser = struct {
         };
 
         expr.integer_literal.value = value;
+
+        // Track the allocated expression
+        self.allocated_expressions.append(expr) catch unreachable;
+
+        // Return the allocated pointer
+        return expr;
+    }
+
+    pub fn parseFloatLiteral(self: *Parser) *ast.Expression {
+        // Allocate memory for the Expression
+        const expr = self.allocator.create(ast.Expression) catch unreachable;
+
+        expr.* = ast.Expression{ .float_literal = ast.FloatLiteral{
+            .token = self.current_token,
+            .value = 0.0,
+        } };
+
+        // Try to parse the float value
+        const value = std.fmt.parseFloat(f64, self.current_token.value) catch |err| {
+            const error_msg = std.fmt.allocPrint(self.allocator, "Error: Failed to parse float '{any}'. Reason: {any}", .{ self.current_token.value, err }) catch return self.createDummyExpression();
+            self.errors.append(error_msg) catch return self.createDummyExpression();
+            return self.createDummyExpression();
+        };
+
+        expr.float_literal.value = value;
 
         // Track the allocated expression
         self.allocated_expressions.append(expr) catch unreachable;
@@ -390,7 +441,12 @@ pub const Parser = struct {
 
     pub fn parseGroupedExpression(self: *Parser) *ast.Expression {
         self.nextToken(); // Consume '('
-        const expr = self.parseExpression(.LOWEST);
+
+        const expr = self.parseExpression(.LOWEST) orelse {
+            self.errors.append("Error: Failed to parse expression inside parentheses") catch {};
+            return self.createDummyExpression();
+        };
+
         if (!self.expectPeek(.RPAREN)) {
             self.errors.append("Error: Missing \')\'") catch return self.createDummyExpression();
             return self.createDummyExpression(); //TODO: Error: Missing ')'
@@ -399,28 +455,32 @@ pub const Parser = struct {
     }
 
     pub fn parsePrefixExpression(self: *Parser) *ast.Expression {
-        // Allocate memory for the Expression union
-        const expr = self.allocator.create(ast.Expression) catch unreachable;
+        // Save the current token info before advancing
+        const prefix_token = self.current_token;
+        const operator = self.current_token.value;
 
-        // Initialize the PrefixExpression and wrap it in the Expression union
+        // Advance to the operand
+        self.nextToken();
+
+        // Parse the right-hand side first
+        const right_expr = self.parseExpression(.PREFIX) orelse {
+            self.errors.append("Error: Failed to parse right-hand side of prefix expression") catch {};
+            return self.createDummyExpression();
+        };
+
+        // Now create and initialize the expression
+        const expr = self.allocator.create(ast.Expression) catch unreachable;
         expr.* = .{
             .prefix_expression = .{
-                .token = self.current_token, // The prefix token (e.g., '-', '!')
-                .operator = self.current_token.value, // The operator (e.g., "-", "!")
-                .right = undefined, // Will be set below
+                .token = prefix_token,
+                .operator = operator,
+                .right = right_expr,
             },
         };
 
-        // Advance to the next token (the operand)
-        self.nextToken();
-
-        // Parse the right-hand side of the prefix expression
-        expr.prefix_expression.right = self.parseExpression(.LOWEST);
-
-        // Track the allocated expression for later cleanup
+        // Track for cleanup
         self.allocated_expressions.append(expr) catch unreachable;
 
-        // Return the parsed expression
         return expr;
     }
 
@@ -449,7 +509,12 @@ pub const Parser = struct {
         self.nextToken();
 
         // Parse the right-hand side of the infix expression
-        expr.infix_expression.right = self.parseExpression(precedence);
+        const right_expr = self.parseExpression(precedence) orelse {
+            self.errors.append("Error: Failed to parse right-hand side of infix expression") catch {};
+            return self.createDummyExpression();
+        };
+
+        expr.infix_expression.right = right_expr;
 
         // Track the allocated expression for later cleanup
         self.allocated_expressions.append(expr) catch unreachable;
