@@ -1,6 +1,7 @@
 const std = @import("std");
 const Lexer = @import("lexer/main.zig").Lexer;
 const LexerUtils = @import("lexer/utils.zig");
+const Parser = @import("parser/main.zig").Parser;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -26,17 +27,29 @@ pub fn replStart() !void {
     while (true) {
         std.debug.print(">> ", .{});
         if (try std.io.getStdIn().reader().readUntilDelimiterOrEof(buffer[0..], '\n')) |input| {
+
+            // start compilation
             var lexer = Lexer.init(allocator, input, "repl", "repl");
             defer lexer.deinit();
 
-            const tokens = try lexer.tokenize();
-            defer allocator.free(tokens);
+            var parser = Parser.init(allocator, &lexer);
 
-            const output = try LexerUtils.tokensToString(allocator, tokens);
-            defer allocator.free(output);
+            defer {
+                if (parser.errors.items.len > 0) {
+                    std.debug.print("\nREPL: Total of {} parser errors\n", .{parser.errors.items.len});
+                    parser.printErrors();
+                }
+                parser.deinit();
+            }
 
-            if (output.len > 0) {
-                std.debug.print("\n{s}\n", .{output});
+            var program = try parser.parseProgram();
+            defer program.deinit();
+
+            if (parser.errors.items.len == 0) {
+                std.debug.print("\nREPL: Total of {d} statements\n", .{program.statements.items.len});
+                if (program.statements.items.len > 0) {
+                    std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
+                }
             }
         } else {
             break;
@@ -70,6 +83,16 @@ pub fn processInputSourceFile(file_path: []const u8) !void {
 
     const output = try LexerUtils.tokensToString(allocator, tokens);
     defer allocator.free(output);
+
+    var parser = Parser.init(allocator, &lexer);
+    defer parser.deinit();
+
+    if (parser.errors.items.len > 0) {
+        parser.printErrors();
+    }
+
+    var program = try parser.parseProgram();
+    defer program.deinit();
 
     std.debug.print("\n{s}\n", .{output});
 }

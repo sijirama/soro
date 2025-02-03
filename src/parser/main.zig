@@ -9,6 +9,9 @@ const Token = @import("../token/main.zig").Token;
 const TokenType = @import("../token/main.zig").TokenType;
 const Type = @import("../token/main.zig").Type;
 const ast = @import("../ast/ast.zig");
+const ParserError = @import("./error.zig").ParserError;
+const ParserErrorType = @import("./error.zig").ParserErrorType;
+const CreateParserError = @import("./error.zig").createError;
 
 const Precedence = enum(u8) {
     LOWEST,
@@ -31,7 +34,7 @@ pub const Parser = struct {
     current_token: Token,
     peek_token: Token,
 
-    errors: std.ArrayList([]const u8), // TODO: change this to ParserError
+    errors: std.ArrayList(ParserError), // TODO: change this to ParserError
 
     prefixParseFns: std.AutoHashMap(TokenType, PrefixParseFn),
     infixParseFns: std.AutoHashMap(TokenType, InfixParseFn),
@@ -45,7 +48,7 @@ pub const Parser = struct {
             .current_token = undefined,
             .peek_token = undefined,
             .allocator = allocator,
-            .errors = std.ArrayList([]const u8).init(allocator),
+            .errors = std.ArrayList(ParserError).init(allocator),
 
             .prefixParseFns = std.AutoHashMap(TokenType, PrefixParseFn).init(allocator),
             .infixParseFns = std.AutoHashMap(TokenType, InfixParseFn).init(allocator),
@@ -143,8 +146,19 @@ pub const Parser = struct {
             self.nextToken(); // Advance to the next token
             return true;
         } else {
-            const error_msg = std.fmt.allocPrint(self.allocator, "Expected next token to be {any}, got {any} instead", .{ expected, self.peek_token.type }) catch return false;
-            self.errors.append(error_msg) catch return false;
+            // const error_msg = std.fmt.allocPrint(self.allocator, "Expected next token to be {any}, got {any} instead", .{ expected, self.peek_token.type }) catch return false;
+            // self.errors.append(error_msg) catch return false;
+
+            self.errors.append(.{
+                .error_type = .UnexpectedToken,
+                .line = self.peek_token.line,
+                .column = self.peek_token.column,
+                .expected = expected,
+                .fileName = self.peek_token.fileName,
+                .fileDirectory = self.peek_token.fileDirectory,
+                .found = self.peek_token.type,
+            }) catch return false;
+
             return false;
         }
     }
@@ -155,6 +169,30 @@ pub const Parser = struct {
 
     pub fn registerInfix(self: *Parser, tokenType: TokenType, func: InfixParseFn) void {
         self.infixParseFns.put(tokenType, func) catch unreachable;
+    }
+
+    fn addError(self: *Parser, error_type: ParserErrorType, token: Token, expected: ?TokenType, found: ?TokenType, message: ?[]const u8) void {
+        self.errors.append(CreateParserError(error_type, token, expected, found, message)) catch unreachable;
+    }
+
+    // Function to print all collected errors
+    pub fn printErrors(self: *Parser) void {
+        if (self.errors.items.len == 0) return;
+
+        // Print header with total error count
+        std.debug.print("\n=== Wahala Dey! Found {} error{s} ===\n\n", .{ self.errors.items.len, if (self.errors.items.len > 1) "s" else "" });
+
+        // Print each error
+        for (self.errors.items, 0..) |err, i| {
+            if (err.format(self.allocator)) |msg| {
+                std.debug.print("{}. {s}\n", .{ i + 1, msg });
+                self.allocator.free(msg);
+            } else |_| {
+                std.debug.print("{}. Error formatting error message\n", .{i + 1});
+            }
+        }
+
+        std.debug.print("\n=== End of Errors ===\n\n", .{});
     }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -170,6 +208,11 @@ pub const Parser = struct {
             }
             self.nextToken();
         }
+
+        // if (self.errors.items.len > 0) {
+        //     self.printErrors();
+        //     return program;
+        // }
 
         return program;
     }
@@ -187,6 +230,8 @@ pub const Parser = struct {
             },
         };
     }
+
+    //WARN:we can't realy return null anywhere here
 
     pub fn parseAbegStatement(self: *Parser) ?ast.Statement {
         // Create the AbegStatement node
@@ -207,7 +252,8 @@ pub const Parser = struct {
 
         // Expect an identifier after 'abeg' or 'abeg lock'
         if (!self.expectPeek(.IDENT)) {
-            return null; // Error: Missing identifier
+            self.addError(.MissingToken, self.current_token, .IDENT, self.peek_token.type, "Expected identifier after 'abeg'");
+            return null;
         }
 
         // Parse the identifier (variable name)
@@ -225,8 +271,9 @@ pub const Parser = struct {
             if (Type.fromTokenType(self.current_token.type)) |type_annotation| {
                 stmt.type_annotation = type_annotation;
             } else {
-                std.debug.print("Error: Invalid type annotation '{s}' at line {}\n", .{ self.current_token.value, self.current_token.line });
-                return null; // Error: Invalid type
+                // Error: Invalid type
+                self.addError(.InvalidTypeAnnotation, self.current_token, null, null, "Invalid type annotation");
+                return null;
             }
         }
 
@@ -260,11 +307,9 @@ pub const Parser = struct {
         self.nextToken();
 
         // Parse the expression on the right-hand side of the assignment
-        //FORMER: stmt.value = self.parseExpression(.LOWEST);
         if (self.parseExpression(.LOWEST)) |expr| {
             stmt.value = expr;
         } else {
-            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
             return null; // Avoid returning a broken statement
         }
 
@@ -290,7 +335,6 @@ pub const Parser = struct {
         if (self.parseExpression(.LOWEST)) |expr| {
             stmt.value = expr;
         } else {
-            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
             return null; // Avoid returning a broken statement
         }
 
@@ -303,7 +347,12 @@ pub const Parser = struct {
 
     pub fn parseExpressionStatement(self: *Parser) ?ast.Statement {
         const expr = self.parseExpression(.LOWEST) orelse {
-            std.debug.print("Error: Failed to parse expression at line {}\n", .{self.current_token.line});
+            //std.debug.print("Error: Failed to parse expression at line from expr stmt {}\n", .{self.current_token.line});
+            const parseError = CreateParserError(.InvalidExpression, self.current_token, null, null, "Failed to parse expression");
+            self.errors.append(parseError) catch return null;
+
+            std.debug.print("\ntotal of {} parse errors from parseExprStmt", .{self.errors.items.len});
+
             return null;
         };
 
@@ -321,16 +370,23 @@ pub const Parser = struct {
 
     pub fn parseExpression(self: *Parser, precedence: Precedence) ?*ast.Expression {
         const prefixFn = self.prefixParseFns.get(self.current_token.type) orelse {
-            const error_msg = std.fmt.allocPrint(self.allocator, "No prefix parse function for '{s}' at line {}, column {}", .{
-                self.current_token.value,
-                self.current_token.line,
-                self.current_token.column,
+            self.errors.append(.{
+                .error_type = .NoPrefix,
+                .line = self.current_token.line,
+                .column = self.current_token.column,
+                .fileName = self.current_token.fileName,
+                .fileDirectory = self.current_token.fileDirectory,
+                .message = self.current_token.value,
             }) catch return null;
-            self.errors.append(error_msg) catch {};
+
             return null; // Return null instead of dummy
         };
 
         var leftExpr = prefixFn(self);
+        // if (leftExpr == null) {
+        //     self.addError(.InvalidExpression, self.current_token, null, null, "Failed to parse prefix expression");
+        //     return null;
+        // }
 
         while (self.peek_token.type != .SEMICOLON and
             @intFromEnum(precedence) < @intFromEnum(self.peekPrecedence()))
@@ -338,7 +394,13 @@ pub const Parser = struct {
             const infixFn = self.infixParseFns.get(self.peek_token.type) orelse break;
             self.nextToken();
             leftExpr = infixFn(self, leftExpr);
+            // if (leftExpr == null) {
+            //     self.addError(.InvalidExpression, self.current_token, null, null, "Failed to parse infix expression");
+            //     return null;
+            // }
         }
+
+        //std.debug.print("Final expr {}", .{leftExpr});
 
         return leftExpr;
     }
@@ -379,9 +441,16 @@ pub const Parser = struct {
         } };
 
         // Try to parse the integer value
-        const value = std.fmt.parseInt(i32, self.current_token.value, 10) catch |err| {
-            const error_msg = std.fmt.allocPrint(self.allocator, "Error: Failed to parse integer '{any}'. Reason: {any}", .{ self.current_token.value, err }) catch return self.createDummyExpression();
-            self.errors.append(error_msg) catch return self.createDummyExpression();
+        const value = std.fmt.parseInt(i32, self.current_token.value, 10) catch {
+            self.errors.append(.{
+                .error_type = .InvalidNumber,
+                .line = self.current_token.line,
+                .column = self.current_token.column,
+                .fileName = self.current_token.fileName,
+                .fileDirectory = self.current_token.fileDirectory,
+                .message = self.current_token.value,
+            }) catch return self.createDummyExpression();
+
             return self.createDummyExpression();
         };
 
@@ -404,9 +473,16 @@ pub const Parser = struct {
         } };
 
         // Try to parse the float value
-        const value = std.fmt.parseFloat(f64, self.current_token.value) catch |err| {
-            const error_msg = std.fmt.allocPrint(self.allocator, "Error: Failed to parse float '{any}'. Reason: {any}", .{ self.current_token.value, err }) catch return self.createDummyExpression();
-            self.errors.append(error_msg) catch return self.createDummyExpression();
+        const value = std.fmt.parseFloat(f64, self.current_token.value) catch {
+            self.errors.append(.{
+                .error_type = .InvalidNumber,
+                .line = self.current_token.line,
+                .column = self.current_token.column,
+                .fileName = self.current_token.fileName,
+                .fileDirectory = self.current_token.fileDirectory,
+                .message = std.fmt.allocPrint(self.allocator, "Dis number '{s}' no be correct float o", .{self.current_token.value}) catch return self.createDummyExpression(),
+            }) catch return self.createDummyExpression();
+
             return self.createDummyExpression();
         };
 
@@ -443,12 +519,29 @@ pub const Parser = struct {
         self.nextToken(); // Consume '('
 
         const expr = self.parseExpression(.LOWEST) orelse {
-            self.errors.append("Error: Failed to parse expression inside parentheses") catch {};
+            self.errors.append(.{
+                .error_type = .InvalidExpression,
+                .line = self.current_token.line,
+                .column = self.current_token.column,
+                .fileName = self.current_token.fileName,
+                .fileDirectory = self.current_token.fileDirectory,
+                .message = "Wetin you put inside bracket no clear",
+            }) catch return self.createDummyExpression();
+
             return self.createDummyExpression();
         };
 
         if (!self.expectPeek(.RPAREN)) {
-            self.errors.append("Error: Missing \')\'") catch return self.createDummyExpression();
+            //self.errors.append("Error: Missing \')\'") catch return self.createDummyExpression();
+
+            self.errors.append(.{
+                .error_type = .MissingRightParen,
+                .line = self.current_token.line,
+                .column = self.current_token.column,
+                .fileName = self.current_token.fileName,
+                .fileDirectory = self.current_token.fileDirectory,
+            }) catch return self.createDummyExpression();
+
             return self.createDummyExpression(); //TODO: Error: Missing ')'
         }
         return expr;
@@ -464,7 +557,7 @@ pub const Parser = struct {
 
         // Parse the right-hand side first
         const right_expr = self.parseExpression(.PREFIX) orelse {
-            self.errors.append("Error: Failed to parse right-hand side of prefix expression") catch {};
+            self.errors.append(CreateParserError(.InvalidPrefixOperator, prefix_token, null, null, "I no fit parse wetin dey right side of dis operator")) catch return self.createDummyExpression();
             return self.createDummyExpression();
         };
 
@@ -490,6 +583,7 @@ pub const Parser = struct {
 
     pub fn parseInfixExpression(self: *Parser, left: *ast.Expression) *ast.Expression {
         // Allocate memory for the Expression union
+        const infix_token = self.current_token;
         const expr = self.allocator.create(ast.Expression) catch unreachable;
 
         // Initialize the InfixExpression and wrap it in the Expression union
@@ -510,13 +604,12 @@ pub const Parser = struct {
 
         // Parse the right-hand side of the infix expression
         const right_expr = self.parseExpression(precedence) orelse {
-            self.errors.append("Error: Failed to parse right-hand side of infix expression") catch {};
+            self.errors.append(CreateParserError(.InvalidInfixOperator, infix_token, null, null, "I no fit parse wetin dey right side of dis operator")) catch return self.createDummyExpression();
             return self.createDummyExpression();
         };
 
         expr.infix_expression.right = right_expr;
 
-        // Track the allocated expression for later cleanup
         self.allocated_expressions.append(expr) catch unreachable;
 
         // Return the parsed expression
