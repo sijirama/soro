@@ -50,6 +50,7 @@ pub fn replStart() !void {
                 if (program.statements.items.len > 0) {
                     std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
                 }
+                std.debug.print("\n", .{});
             }
         } else {
             break;

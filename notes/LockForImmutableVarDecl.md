@@ -26,5 +26,3 @@ appName = "NewApp";  // ❌ ERROR: Immutable variable
 4. **Attempting to reassign a `lock` variable should throw an error.**  
 
 This keeps the syntax simple while allowing immutability when needed. 🚀  
-
-What do you think?
