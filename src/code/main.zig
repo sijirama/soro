@@ -2,7 +2,7 @@ const std = @import("std");
 
 /// A type alias for `u8` to represent a byte.
 /// This makes the code more readable and semantically meaningful.
-const byte = u8;
+pub const byte = u8;
 
 /// Represents a sequence of instructions as a slice of bytes.
 /// Each instruction is encoded as one or more bytes.

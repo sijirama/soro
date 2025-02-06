@@ -1,9 +1,9 @@
 const std = @import("std");
 const code = @import("../code/main.zig");
 const ast = @import("../ast/ast.zig");
-const object = @import("../object/object.zig");
+const object = @import("../object/main.zig");
 
-const Bytecode = struct {
+pub const Bytecode = struct {
     Instructions: []code.byte,
     Constants: []object.Object,
     allocator: std.mem.Allocator,
@@ -14,12 +14,12 @@ const Bytecode = struct {
     }
 };
 
-const Compiler = struct {
+pub const Compiler = struct {
     instructions: std.ArrayList(code.byte), // array of instructions
     constantPool: std.ArrayList(object.Object), // array of constants
     allocator: std.mem.Allocator,
 
-    fn init(allocator: std.mem.Allocator) Compiler {
+    pub fn init(allocator: std.mem.Allocator) Compiler {
         const compiler = Compiler{
             .allocator = allocator,
             .constantPool = std.ArrayList(object.Object).init(allocator),
@@ -33,13 +33,13 @@ const Compiler = struct {
         self.constantPool.deinit();
     }
 
-    fn bytecode(self: *Compiler) Bytecode {
+    pub fn bytecode(self: *Compiler) !Bytecode {
         return Bytecode{
-            .instructions = try self.instructions.toOwnedSlice(),
-            .constants = try self.constantPool.toOwnedSlice(),
+            .Instructions = try self.instructions.toOwnedSlice(),
+            .Constants = try self.constantPool.toOwnedSlice(),
             .allocator = self.allocator,
         };
     }
 
-    fn compile(_: *Compiler, _: ast.Program) void {}
+    pub fn compile(_: *Compiler, _: ast.Program) !void {}
 };

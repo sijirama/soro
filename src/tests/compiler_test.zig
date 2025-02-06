@@ -1,10 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
 const code = @import("../code/main.zig");
-const object = @import("../object/object.zig");
+const object = @import("../object/main.zig");
 const compiler = @import("../compiler/main.zig");
 const parser = @import("../parser/main.zig");
 const lexer = @import("../lexer/main.zig");
+const ast = @import("../ast/ast.zig");
 
 const CompilerTestCase = struct {
     input: []const u8,
@@ -19,9 +20,9 @@ const ExpectedConstant = union(enum) {
     string: []const u8,
 };
 
-fn parse(input: []const u8, allocator: std.mem.Allocator) !parser.ast.Program {
-    var l = lexer.Lexer.init(input);
-    var p = try parser.Parser.init(&l, allocator);
+fn parse(input: []const u8, allocator: std.mem.Allocator) !ast.Program {
+    var l = lexer.Lexer.init(allocator, input, "repl", "repl");
+    var p = parser.Parser.init(allocator, &l);
     defer p.deinit();
     return p.parseProgram();
 }
@@ -108,6 +109,9 @@ fn testConstants(
 fn runCompilerTests(allocator: std.mem.Allocator, test_cases: []const CompilerTestCase) !void {
     for (test_cases) |test_case| {
         var program = try parse(test_case.input, allocator);
+
+        std.debug.print("COMPILER TEST:113: {}", .{program.statements.items[0]});
+
         defer program.deinit();
 
         var comp = compiler.Compiler.init(allocator);
@@ -118,8 +122,8 @@ fn runCompilerTests(allocator: std.mem.Allocator, test_cases: []const CompilerTe
         var bytecode = try comp.bytecode();
         defer bytecode.deinit();
 
-        try testInstructions(test_case.expected_instructions, bytecode.instructions);
-        try testConstants(test_case.expected_constants, bytecode.constants);
+        try testConstants(test_case.expected_constants, bytecode.Constants);
+        try testInstructions(test_case.expected_instructions, bytecode.Instructions);
     }
 }
 

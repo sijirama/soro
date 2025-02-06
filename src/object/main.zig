@@ -10,11 +10,11 @@ pub const ObjectType = enum {
     ReturnValue,
     Error,
     String,
-    Builtin,
-    Array,
-    Hash,
-    Function,
-    CompiledFunction,
+    // Builtin,
+    // Array,
+    // Hash,
+    //Function,
+    //CompiledFunction,
 
     pub fn toString(self: ObjectType) []const u8 {
         return switch (self) {
@@ -25,11 +25,11 @@ pub const ObjectType = enum {
             .ReturnValue => "RETURN_VALUE",
             .Error => "ERROR",
             .String => "STRING",
-            .Builtin => "BUILTIN",
-            .Array => "ARRAY",
-            .Hash => "HASH",
-            .Function => "FUNCTION",
-            .CompiledFunction => "COMPILED_FUNCTION",
+            //.Builtin => "BUILTIN",
+            //.Array => "ARRAY",
+            //.Hash => "HASH",
+            // .Function => "FUNCTION",
+            // .CompiledFunction => "COMPILED_FUNCTION",
         };
     }
 };
@@ -42,11 +42,11 @@ pub const Object = union(ObjectType) {
     ReturnValue: ReturnValue,
     Error: Error,
     String: String,
-    Builtin: Builtin,
-    Array: Array,
-    Hash: Hash,
-    Function: Function,
-    CompiledFunction: CompiledFunction,
+    // Builtin: Builtin,
+    // Array: Array,
+    // Hash: Hash,
+    //Function: Function,
+    //CompiledFunction: CompiledFunction,
 };
 
 pub const Integer = struct {
@@ -165,6 +165,46 @@ pub const String = struct {
     }
 };
 
+pub const ReturnValue = struct {
+    value: *const Object,
+
+    pub fn objectType(self: ReturnValue) []const u8 {
+        _ = self;
+        return ObjectType.ReturnValue.toString();
+    }
+
+    pub fn inspect(self: ReturnValue) []const u8 {
+        return switch (self.value) {
+            inline else => |v| v.inspect(),
+        };
+    }
+
+    pub fn formatWithMetadata(self: ReturnValue) []const u8 {
+        return self.inspect();
+    }
+};
+
+pub const Error = struct {
+    message: []const u8,
+
+    pub fn objectType(self: Error) []const u8 {
+        _ = self;
+        return ObjectType.Error.toString();
+    }
+
+    pub fn inspect(self: Error) []const u8 {
+        return self.message;
+    }
+
+    pub fn formatWithMetadata(self: Error) []const u8 {
+        return std.fmt.allocPrint(
+            std.heap.page_allocator,
+            "ERROR: {s}",
+            .{self.message},
+        ) catch "error formatting error";
+    }
+};
+
 pub const BuiltinFunction = *const fn (args: []const Object) Object;
 
 pub const Builtin = struct {
@@ -186,7 +226,7 @@ pub const Builtin = struct {
 };
 
 pub const Array = struct {
-    elements: []Object,
+    elements: []*const Object,
     is_immutable: bool = false,
 
     pub fn objectType(self: Array) []const u8 {
@@ -226,8 +266,8 @@ pub const HashKey = struct {
 };
 
 pub const HashPair = struct {
-    key: Object,
-    value: Object,
+    key: *const Object,
+    value: *const Object,
 };
 
 pub const Hash = struct {
@@ -271,109 +311,65 @@ pub const Hash = struct {
     }
 };
 
-pub const Function = struct {
-    parameters: []const *ast.Identifier,
-    body: *ast.BlockStatement,
-    env: *Environment,
-    is_immutable: bool = false,
+// pub const Function = struct {
+//     parameters: []const *ast.Identifier,
+//     body: *ast.BlockStatement,
+//     env: *Environment,
+//     is_immutable: bool = false,
+//
+//     pub fn objectType(self: Function) []const u8 {
+//         _ = self;
+//         return ObjectType.Function.toString();
+//     }
+//
+//     pub fn inspect(self: Function) []const u8 {
+//         var result = std.ArrayList(u8).init(std.heap.page_allocator);
+//         result.appendSlice("fn(") catch return "error formatting function";
+//         for (self.parameters, 0..) |param, i| {
+//             if (i > 0) {
+//                 result.appendSlice(", ") catch return "error formatting function";
+//             }
+//             result.appendSlice(param.toString()) catch return "error formatting function";
+//         }
+//         result.appendSlice(") {\n") catch return "error formatting function";
+//         result.appendSlice(self.body.toString()) catch return "error formatting function";
+//         result.appendSlice("\n}") catch return "error formatting function";
+//         return result.items;
+//     }
+//
+//     pub fn formatWithMetadata(self: Function) []const u8 {
+//         var result = std.ArrayList(u8).init(std.heap.page_allocator);
+//         if (self.is_immutable) {
+//             result.appendSlice("const ") catch return "error formatting function";
+//         }
+//         result.appendSlice(self.inspect()) catch return "error formatting function";
+//         return result.items;
+//     }
+// };
 
-    pub fn objectType(self: Function) []const u8 {
-        _ = self;
-        return ObjectType.Function.toString();
-    }
-
-    pub fn inspect(self: Function) []const u8 {
-        var result = std.ArrayList(u8).init(std.heap.page_allocator);
-        result.appendSlice("fn(") catch return "error formatting function";
-        for (self.parameters, 0..) |param, i| {
-            if (i > 0) {
-                result.appendSlice(", ") catch return "error formatting function";
-            }
-            result.appendSlice(param.toString()) catch return "error formatting function";
-        }
-        result.appendSlice(") {\n") catch return "error formatting function";
-        result.appendSlice(self.body.toString()) catch return "error formatting function";
-        result.appendSlice("\n}") catch return "error formatting function";
-        return result.items;
-    }
-
-    pub fn formatWithMetadata(self: Function) []const u8 {
-        var result = std.ArrayList(u8).init(std.heap.page_allocator);
-        if (self.is_immutable) {
-            result.appendSlice("const ") catch return "error formatting function";
-        }
-        result.appendSlice(self.inspect()) catch return "error formatting function";
-        return result.items;
-    }
-};
-
-pub const ReturnValue = struct {
-    value: Object,
-
-    pub fn objectType(self: ReturnValue) []const u8 {
-        _ = self;
-        return ObjectType.ReturnValue.toString();
-    }
-
-    pub fn inspect(self: ReturnValue) []const u8 {
-        return switch (self.value) {
-            inline else => |v| v.inspect(),
-        };
-    }
-
-    pub fn formatWithMetadata(self: ReturnValue) []const u8 {
-        return self.inspect();
-    }
-};
-
-pub const Error = struct {
-    message: []const u8,
-
-    pub fn objectType(self: Error) []const u8 {
-        _ = self;
-        return ObjectType.Error.toString();
-    }
-
-    pub fn inspect(self: Error) []const u8 {
-        return self.message;
-    }
-
-    pub fn formatWithMetadata(self: Error) []const u8 {
-        return std.fmt.allocPrint(
-            std.heap.page_allocator,
-            "ERROR: {s}",
-            .{self.message},
-        ) catch "error formatting error";
-    }
-};
-
-pub const CompiledFunction = struct {
-    instructions: code.InstructionsType,
-    num_locals: usize,
-    num_parameters: usize,
-
-    pub fn objectType(self: CompiledFunction) []const u8 {
-        _ = self;
-        return ObjectType.CompiledFunction.toString();
-    }
-
-    pub fn inspect(self: CompiledFunction) []const u8 {
-        return std.fmt.allocPrint(
-            std.heap.page_allocator,
-            "{*}",
-            .{&self},
-        ) catch "error formatting compiled function";
-    }
-
-    pub fn formatWithMetadata(self: CompiledFunction) []const u8 {
-        return std.fmt.allocPrint(
-            std.heap.page_allocator,
-            "CompiledFunction[{*}]",
-            .{&self},
-        ) catch "error formatting compiled function";
-    }
-};
-
-pub const Environment = struct {
-    // Environment implementation would go here
-};
+// pub const CompiledFunction = struct {
+//     instructions: code.InstructionsType,
+//     num_locals: usize,
+//     num_parameters: usize,
+//
+//     pub fn objectType(self: CompiledFunction) []const u8 {
+//         _ = self;
+//         return ObjectType.CompiledFunction.toString();
+//     }
+//
+//     pub fn inspect(self: CompiledFunction) []const u8 {
+//         return std.fmt.allocPrint(
+//             std.heap.page_allocator,
+//             "{*}",
+//             .{&self},
+//         ) catch "error formatting compiled function";
+//     }
+//
+//     pub fn formatWithMetadata(self: CompiledFunction) []const u8 {
+//         return std.fmt.allocPrint(
+//             std.heap.page_allocator,
+//             "CompiledFunction[{*}]",
+//             .{&self},
+//         ) catch "error formatting compiled function";
+//     }
+// };
