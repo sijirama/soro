@@ -109,10 +109,9 @@ fn testConstants(
 fn runCompilerTests(allocator: std.mem.Allocator, test_cases: []const CompilerTestCase) !void {
     for (test_cases) |test_case| {
         var program = try parse(test_case.input, allocator);
-
-        std.debug.print("COMPILER TEST:113: {}", .{program.statements.items[0]});
-
         defer program.deinit();
+
+        std.debug.print("DEBUG_COMPILER_TEST: {}", .{program.statements.items[0]}); // ast after parsing
 
         var comp = compiler.Compiler.init(allocator);
         defer comp.deinit();
@@ -121,6 +120,7 @@ fn runCompilerTests(allocator: std.mem.Allocator, test_cases: []const CompilerTe
 
         var bytecode = try comp.bytecode();
         defer bytecode.deinit();
+        defer allocator.destroy(bytecode);
 
         try testConstants(test_case.expected_constants, bytecode.Constants);
         try testInstructions(test_case.expected_instructions, bytecode.Instructions);

@@ -10,12 +10,6 @@ pub const ObjectType = enum {
     ReturnValue,
     Error,
     String,
-    // Builtin,
-    // Array,
-    // Hash,
-    //Function,
-    //CompiledFunction,
-
     pub fn toString(self: ObjectType) []const u8 {
         return switch (self) {
             .Integer => "INTEGER",
@@ -25,11 +19,6 @@ pub const ObjectType = enum {
             .ReturnValue => "RETURN_VALUE",
             .Error => "ERROR",
             .String => "STRING",
-            //.Builtin => "BUILTIN",
-            //.Array => "ARRAY",
-            //.Hash => "HASH",
-            // .Function => "FUNCTION",
-            // .CompiledFunction => "COMPILED_FUNCTION",
         };
     }
 };
@@ -42,11 +31,6 @@ pub const Object = union(ObjectType) {
     ReturnValue: ReturnValue,
     Error: Error,
     String: String,
-    // Builtin: Builtin,
-    // Array: Array,
-    // Hash: Hash,
-    //Function: Function,
-    //CompiledFunction: CompiledFunction,
 };
 
 pub const Integer = struct {
@@ -205,26 +189,6 @@ pub const Error = struct {
     }
 };
 
-pub const BuiltinFunction = *const fn (args: []const Object) Object;
-
-pub const Builtin = struct {
-    func: BuiltinFunction,
-
-    pub fn objectType(self: Builtin) []const u8 {
-        _ = self;
-        return ObjectType.Builtin.toString();
-    }
-
-    pub fn inspect(self: Builtin) []const u8 {
-        _ = self;
-        return "builtin function";
-    }
-
-    pub fn formatWithMetadata(self: Builtin) []const u8 {
-        return self.inspect();
-    }
-};
-
 pub const Array = struct {
     elements: []*const Object,
     is_immutable: bool = false,
@@ -310,66 +274,3 @@ pub const Hash = struct {
         return result.items;
     }
 };
-
-// pub const Function = struct {
-//     parameters: []const *ast.Identifier,
-//     body: *ast.BlockStatement,
-//     env: *Environment,
-//     is_immutable: bool = false,
-//
-//     pub fn objectType(self: Function) []const u8 {
-//         _ = self;
-//         return ObjectType.Function.toString();
-//     }
-//
-//     pub fn inspect(self: Function) []const u8 {
-//         var result = std.ArrayList(u8).init(std.heap.page_allocator);
-//         result.appendSlice("fn(") catch return "error formatting function";
-//         for (self.parameters, 0..) |param, i| {
-//             if (i > 0) {
-//                 result.appendSlice(", ") catch return "error formatting function";
-//             }
-//             result.appendSlice(param.toString()) catch return "error formatting function";
-//         }
-//         result.appendSlice(") {\n") catch return "error formatting function";
-//         result.appendSlice(self.body.toString()) catch return "error formatting function";
-//         result.appendSlice("\n}") catch return "error formatting function";
-//         return result.items;
-//     }
-//
-//     pub fn formatWithMetadata(self: Function) []const u8 {
-//         var result = std.ArrayList(u8).init(std.heap.page_allocator);
-//         if (self.is_immutable) {
-//             result.appendSlice("const ") catch return "error formatting function";
-//         }
-//         result.appendSlice(self.inspect()) catch return "error formatting function";
-//         return result.items;
-//     }
-// };
-
-// pub const CompiledFunction = struct {
-//     instructions: code.InstructionsType,
-//     num_locals: usize,
-//     num_parameters: usize,
-//
-//     pub fn objectType(self: CompiledFunction) []const u8 {
-//         _ = self;
-//         return ObjectType.CompiledFunction.toString();
-//     }
-//
-//     pub fn inspect(self: CompiledFunction) []const u8 {
-//         return std.fmt.allocPrint(
-//             std.heap.page_allocator,
-//             "{*}",
-//             .{&self},
-//         ) catch "error formatting compiled function";
-//     }
-//
-//     pub fn formatWithMetadata(self: CompiledFunction) []const u8 {
-//         return std.fmt.allocPrint(
-//             std.heap.page_allocator,
-//             "CompiledFunction[{*}]",
-//             .{&self},
-//         ) catch "error formatting compiled function";
-//     }
-// };

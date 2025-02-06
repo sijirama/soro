@@ -33,12 +33,14 @@ pub const Compiler = struct {
         self.constantPool.deinit();
     }
 
-    pub fn bytecode(self: *Compiler) !Bytecode {
-        return Bytecode{
+    pub fn bytecode(self: *Compiler) !*Bytecode {
+        const bytecode_ptr = try self.allocator.create(Bytecode);
+        bytecode_ptr.* = Bytecode{
             .Instructions = try self.instructions.toOwnedSlice(),
             .Constants = try self.constantPool.toOwnedSlice(),
             .allocator = self.allocator,
         };
+        return bytecode_ptr;
     }
 
     pub fn compile(_: *Compiler, _: ast.Program) !void {}
