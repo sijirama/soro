@@ -1,0 +1,6 @@
+abeg name string = "oluwasijibomi";
+abeg age int = 21;
+abeg balance float = 95.50;
+abeg brosbalance float = -95.50;
+abeg imRicher bool = true;
+abeg married bool = false;
