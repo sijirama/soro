@@ -2,7 +2,7 @@
 
 ### A programming language inspired by Nigerian Pidgin English
 
-Soro (meaning "speak" in Pidgin) is an experimental programming language that blends Pidgin English syntax with modern programming concepts. It’s designed to be both simple and familiar, especially for those who are familiar with nigerian pidgin english.
+Soro (meaning "speak" in Yoruba) is an experimental programming language that blends Pidgin English syntax with modern programming concepts. It’s designed to be both simple and familiar, especially for those who are familiar with nigerian pidgin english.
 
 Soro is powered by its own tokenizer, parser, and compiler that generates custom bytecode to run on its virtual machine. 
 
