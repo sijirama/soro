@@ -27,6 +27,7 @@ pub const TokenType = enum {
     SLASH, // /
     GREATER_THAN, // >
     LESS_THAN, // <
+    //MODULO, // %
 
     COMMA, // ,
     COLON, // :
