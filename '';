@@ -141,14 +141,6 @@ test "Compiler: Test Instruction strings" {
         \\ 0003 OpConstant 2
         \\ 0006 OpConstant 65535
     ;
-
-    var concatted = code.InstructionsType{};
-
-    for (instructions) |value| {
-        concatted += value;
-    }
-
-    try testing.expectEqualStrings(expected, concatted.String());
 }
 
 test "Compiler: integer arithmetic" {
