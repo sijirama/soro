@@ -9,8 +9,12 @@ pub const Bytecode = struct {
     allocator: std.mem.Allocator,
 
     pub fn deinit(self: *Bytecode) void {
-        self.allocator.free(self.Instructions);
-        self.allocator.free(self.Constants);
+        if (self.Instructions.len > 0) {
+            self.allocator.free(self.Instructions);
+        }
+        if (self.Constants.len > 0) {
+            self.allocator.free(self.Constants);
+        }
     }
 };
 
@@ -35,9 +39,19 @@ pub const Compiler = struct {
 
     pub fn bytecode(self: *Compiler) !*Bytecode {
         const bytecode_ptr = try self.allocator.create(Bytecode);
+        errdefer self.allocator.destroy(bytecode_ptr);
+
+        const instructions_copy = try self.allocator.alloc(code.byte, self.instructions.items.len);
+        errdefer self.allocator.free(instructions_copy);
+        @memcpy(instructions_copy, self.instructions.items);
+
+        const constants_copy = try self.allocator.alloc(object.Object, self.constantPool.items.len);
+        errdefer self.allocator.free(constants_copy);
+        @memcpy(constants_copy, self.constantPool.items);
+
         bytecode_ptr.* = Bytecode{
-            .Instructions = try self.instructions.toOwnedSlice(),
-            .Constants = try self.constantPool.toOwnedSlice(),
+            .Instructions = instructions_copy,
+            .Constants = constants_copy,
             .allocator = self.allocator,
         };
         return bytecode_ptr;
@@ -52,14 +66,14 @@ pub const Compiler = struct {
     /// emit: Creates and emits an instruction, returning its position
     fn emit(self: *Compiler, op: code.Opcode, operands: []const u32) !usize {
         const instruction = try code.MakeInstruction(self.allocator, op, operands);
+        defer self.allocator.free(instruction); // Free the temporary instruction
+
         const pos = self.instructions.items.len;
         try self.instructions.appendSlice(instruction);
-        self.allocator.free(instruction); // Free the temporary instruction
         return pos;
     }
 
     pub fn compile(self: *Compiler, node: anytype) !void {
-        std.debug.print("Compiling node of type: {}\n", .{@TypeOf(node)});
         switch (@TypeOf(node)) {
             ast.Program => {
                 for (node.statements.items) |stmt| {
@@ -69,8 +83,6 @@ pub const Compiler = struct {
             ast.Statement => {
                 switch (node) {
                     .expression_statement => |stmt| {
-                        std.debug.print("Compiling expression statement: {any}\n", .{stmt}); // Debug log
-                        std.debug.print("Expression pointer: {*}\n", .{stmt.expression}); // Debug log
                         const expr = stmt.expression.*;
                         try self.compile(expr);
                     },
