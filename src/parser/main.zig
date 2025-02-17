@@ -529,6 +529,9 @@ pub const Parser = struct {
             return null;
         };
 
+        //TODO:
+        //std.debug.print("Parsed expression: {any}\n", .{expr}); // Debug log
+
         const stmt = ast.ExpressionStatement{
             .token = self.current_token,
             .expression = expr,

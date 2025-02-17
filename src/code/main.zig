@@ -80,3 +80,56 @@ pub fn MakeInstruction(allocator: std.mem.Allocator, op: Opcode, operands: []con
 
     return instruction;
 }
+
+/// Create a string representation of Instructions
+pub fn instructionsToString(instructions: []const u8, allocator: std.mem.Allocator) ![]u8 {
+    var buffer = std.ArrayList(u8).init(allocator);
+    errdefer buffer.deinit();
+
+    var i: usize = 0;
+    while (i < instructions.len) {
+        const op = instructions[i];
+        const def = LookUpDefinition(op) orelse {
+            try std.fmt.format(buffer.writer(), "ERROR: unknown opcode {d}\n", .{op});
+            i += 1;
+            continue;
+        };
+
+        const operands = try readOperands(def, instructions[i + 1 ..], allocator);
+        defer allocator.free(operands);
+
+        try std.fmt.format(buffer.writer(), "{:0>4} {s}", .{ i, def.Name });
+
+        // Print operands
+        for (operands) |operand| {
+            try std.fmt.format(buffer.writer(), " {d}", .{operand});
+        }
+        try buffer.append('\n');
+
+        i += 1;
+        for (def.OperandWidths) |width| {
+            i += width;
+        }
+    }
+
+    return buffer.toOwnedSlice();
+}
+
+/// Read operands from a bytecode instruction
+pub fn readOperands(def: OpcodeDefinition, ins: []const u8, allocator: std.mem.Allocator) ![]u32 {
+    var operands = try allocator.alloc(u32, def.OperandWidths.len);
+    errdefer allocator.free(operands);
+
+    var offset: usize = 0;
+    for (def.OperandWidths, 0..) |width, i| {
+        switch (width) {
+            2 => {
+                operands[i] = @as(u32, std.mem.readInt(u16, ins[offset..][0..2], .big));
+                offset += 2;
+            },
+            else => return error.UnsupportedOperandWidth,
+        }
+    }
+
+    return operands;
+}
