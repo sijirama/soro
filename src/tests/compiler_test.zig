@@ -190,7 +190,7 @@ test "Compiler: integer arithmetic" {
 
     const test_cases = [_]CompilerTestCase{
         .{
-            .input = "1 + 2 ",
+            .input = "1 + 2",
             .expected_constants = &[_]ExpectedConstant{
                 .{ .integer = 1 },
                 .{ .integer = 2 },
