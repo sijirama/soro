@@ -76,7 +76,8 @@ test "integer arithmetic" {
     const test_cases = [_]VmTestCase{
         .{ .input = "1", .expected = .{ .int = 1 } },
         .{ .input = "2", .expected = .{ .int = 2 } },
-        .{ .input = "1 + 2 + 3", .expected = .{ .int = 3 } }, // FIXME: This will fail until you implement addition
+        .{ .input = "2 + 1", .expected = .{ .int = 3 } },
+        .{ .input = "1 + 2 + 3", .expected = .{ .int = 6 } }, // FIXME: This will fail until you implement addition
     };
 
     try runVmTests(std.testing.allocator, &test_cases);

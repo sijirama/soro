@@ -108,7 +108,20 @@ pub const Compiler = struct {
                         const right = expr.right.*;
                         try self.compile(left);
                         try self.compile(right);
-                        // Emit the infix operation opcode here (e.g., OpAdd, OpSub, etc.)
+
+                        if (std.mem.eql(u8, expr.operator, "+")) {
+                            _ = try self.emit(.OpAdd, &[_]u32{});
+                        }
+
+                        // else if (std.mem.eql(u8, expr.operator, "-")) {
+                        //     try self.emit(.OpSubtract, {});
+                        // } else if (std.mem.eql(u8, expr.operator, "*")) {
+                        //     try self.emit(.OpMultiply, {});
+                        // } else if (std.mem.eql(u8, expr.operator, "/")) {
+                        //     try self.emit(.OpDivide, {});
+                        // } else {
+                        //     return error.UnknownOperator;
+                        // }
                     },
                     .prefix_expression => |expr| {
                         const right = expr.right.*;

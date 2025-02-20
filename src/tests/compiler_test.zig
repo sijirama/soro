@@ -198,6 +198,7 @@ test "Compiler: integer arithmetic" {
             .expected_instructions = &[_][]const u8{
                 try make(allocator, .OpConstant, &[_]u32{0}),
                 try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpAdd, &[_]u32{}),
             },
         },
     };
@@ -217,7 +218,7 @@ test "Compiler: instructions to string" {
     const allocator = std.testing.allocator;
 
     // Create test instructions
-    const ins1 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{1});
+    const ins1 = try code.MakeInstruction(allocator, .OpAdd, &[_]u32{});
     defer allocator.free(ins1);
     const ins2 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{2});
     defer allocator.free(ins2);
@@ -238,9 +239,9 @@ test "Compiler: instructions to string" {
     defer allocator.free(result);
 
     const expected =
-        \\0000 OpConstant 1
-        \\0003 OpConstant 2
-        \\0006 OpConstant 65535
+        \\0000 OpAdd
+        \\0001 OpConstant 2
+        \\0004 OpConstant 65535
         \\
     ;
 
