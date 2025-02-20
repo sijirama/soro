@@ -2,6 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const code = @import("../code/main.zig");
 const object = @import("../object/main.zig");
+const PrintObject = @import("../object/utils.zig").printObject;
 const compiler = @import("../compiler/main.zig");
 const parser = @import("../parser/main.zig");
 const lexer = @import("../lexer/main.zig");
@@ -67,6 +68,8 @@ fn runVmTests(allocator: std.mem.Allocator, test_cases: []const VmTestCase) !voi
 
         try vm.run();
         const stackElem = vm.stackTop() orelse return error.StackEmpty;
+
+        PrintObject(stackElem);
 
         try testExpectedObject(test_case.expected, stackElem);
     }

@@ -2,6 +2,9 @@ const std = @import("std");
 const Lexer = @import("lexer/main.zig").Lexer;
 const LexerUtils = @import("lexer/utils.zig");
 const Parser = @import("parser/main.zig").Parser;
+const compiler = @import("compiler/main.zig");
+const VM = @import("vm/main.zig").VM;
+const PrintObject = @import("object/utils.zig").printObject;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
@@ -33,25 +36,37 @@ pub fn replStart() !void {
             defer lexer.deinit();
 
             var parser = Parser.init(allocator, &lexer);
-
-            defer {
-                if (parser.errors.items.len > 0) {
-                    std.debug.print("\nREPL: Total of {} parser errors\n", .{parser.errors.items.len});
-                    parser.printErrors();
-                }
-                parser.deinit();
-            }
+            defer parser.deinit();
 
             var program = try parser.parseProgram();
             defer program.deinit();
 
-            if (parser.errors.items.len == 0) {
-                std.debug.print("\nREPL: Total of {d} statements\n", .{program.statements.items.len});
-                if (program.statements.items.len > 0) {
-                    std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
-                }
-                std.debug.print("\n", .{});
+            // if (parser.errors.items.len == 0) {
+            //     std.debug.print("\nREPL: Total of {d} statements\n", .{program.statements.items.len});
+            //     if (program.statements.items.len > 0) {
+            //         std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
+            //     }
+            //     std.debug.print("\n", .{});
+            // }
+
+            var comp = compiler.Compiler.init(allocator);
+            defer comp.deinit();
+
+            try comp.compile(program);
+            const bytecode = try comp.bytecode();
+
+            defer {
+                bytecode.deinit();
+                allocator.destroy(bytecode);
             }
+
+            var vm = VM.init(allocator, bytecode);
+            defer vm.deinit(allocator);
+
+            try vm.run();
+            const stackElem = vm.stackTop() orelse return error.StackEmpty;
+
+            PrintObject(stackElem);
         } else {
             break;
         }
