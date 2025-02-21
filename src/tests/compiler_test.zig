@@ -359,6 +359,81 @@ test "Compiler: boolean expressions" {
                 try make(allocator, .OpPop, &[_]u32{}),
             },
         },
+        .{
+            .input = "1 > 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpGreaterThan, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1 < 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpLessThan, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1 == 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpEqual, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        // Inequality
+        .{
+            .input = "1 != 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpNotEqual, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        // Boolean equality
+        .{
+            .input = "true == false",
+            .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpTrue, &[_]u32{}),
+                try make(allocator, .OpFalse, &[_]u32{}),
+                try make(allocator, .OpEqual, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        // Boolean inequality
+        .{
+            .input = "true != false",
+            .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpTrue, &[_]u32{}),
+                try make(allocator, .OpFalse, &[_]u32{}),
+                try make(allocator, .OpNotEqual, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
     };
 
     // Free the test case instructions

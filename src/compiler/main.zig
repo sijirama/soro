@@ -127,6 +127,7 @@ pub const Compiler = struct {
 
                         // i know this is sad, but i can't switch overstrings in zig
                         //which is crazy so this was the next thing, abeg no vex
+                        // i should definitely use a switch case here, wtf
 
                         if (std.mem.eql(u8, expr.operator, "+")) {
                             _ = try self.emit(.OpAdd, &[_]u32{});
@@ -139,6 +140,19 @@ pub const Compiler = struct {
                         }
                         if (std.mem.eql(u8, expr.operator, "/")) {
                             _ = try self.emit(.OpDiv, &[_]u32{});
+                        }
+                        if (std.mem.eql(u8, expr.operator, ">")) {
+                            _ = try self.emit(.OpGreaterThan, &[_]u32{});
+                        }
+                        if (std.mem.eql(u8, expr.operator, "<")) {
+                            _ = try self.emit(.OpLessThan, &[_]u32{});
+                        }
+
+                        if (std.mem.eql(u8, expr.operator, "==")) {
+                            _ = try self.emit(.OpEqual, &[_]u32{});
+                        }
+                        if (std.mem.eql(u8, expr.operator, "!=")) {
+                            _ = try self.emit(.OpNotEqual, &[_]u32{});
                         }
 
                         //omo the other ones i never do like

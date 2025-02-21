@@ -26,6 +26,11 @@ pub const Opcode = enum(OpcodeType) {
     OpMul,
     OpDiv,
 
+    OpEqual,
+    OpNotEqual,
+    OpGreaterThan,
+    OpLessThan,
+
     // booleans
     OpTrue,
     OpFalse,
@@ -49,10 +54,18 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
         .OperandWidths = &[_]u8{2}, // 1 operand, 2 bytes wide
     },
     .OpPop = .{ .Name = "OpPop", .OperandWidths = &[_]u8{} },
+
     .OpAdd = .{ .Name = "OpAdd", .OperandWidths = &[_]u8{} },
     .OpSub = .{ .Name = "OpSub", .OperandWidths = &[_]u8{} },
     .OpMul = .{ .Name = "OpMul", .OperandWidths = &[_]u8{} },
     .OpDiv = .{ .Name = "OpDiv", .OperandWidths = &[_]u8{} },
+
+    .OpEqual = .{ .Name = "OpEqual", .OperandWidths = &[_]u8{} },
+    .OpNotEqual = .{ .Name = "OpNotEqual", .OperandWidths = &[_]u8{} },
+
+    .OpGreaterThan = .{ .Name = "OpGreaterThan", .OperandWidths = &[_]u8{} },
+    .OpLessThan = .{ .Name = "OpLessThan", .OperandWidths = &[_]u8{} },
+
     .OpTrue = .{ .Name = "OpTrue", .OperandWidths = &[_]u8{} },
     .OpFalse = .{ .Name = "OpFalse", .OperandWidths = &[_]u8{} },
 });
