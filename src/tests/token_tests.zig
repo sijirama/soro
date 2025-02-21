@@ -12,8 +12,8 @@ test "Keywords.getKeywordToken returns correct token types" {
     try testing.expectEqual(Keywords.getKeywordToken("comot"), .COMOT);
     try testing.expectEqual(Keywords.getKeywordToken("true"), .TRUE);
     try testing.expectEqual(Keywords.getKeywordToken("false"), .FALSE);
-    try testing.expectEqual(Keywords.getKeywordToken("if"), .IF);
-    try testing.expectEqual(Keywords.getKeywordToken("else"), .ELSE);
+    try testing.expectEqual(Keywords.getKeywordToken("abi"), .ABI);
+    try testing.expectEqual(Keywords.getKeywordToken("naso"), .NASO);
     try testing.expectEqual(Keywords.getKeywordToken("and"), .AND);
     try testing.expectEqual(Keywords.getKeywordToken("or"), .OR);
     try testing.expectEqual(Keywords.getKeywordToken("orelse"), .OR_ELSE);

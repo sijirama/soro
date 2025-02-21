@@ -144,9 +144,9 @@ test "Lexer: Final Test" {
         \\abeg result int = add (5, 10);
         \\!-/ or *5;
         \\5 < 10 > 5;
-        \\if (5 < 10) {
+        \\abi (5 < 10) {
         \\    comot true;
-        \\} else {
+        \\} naso {
         \\    comot false;
         \\}
         \\10 == 10;
@@ -162,7 +162,7 @@ test "Lexer: Final Test" {
         \\abeg name string = "John";
         \\abeg anyvalue any = 42;
         \\abeg err error = "oops";
-        \\if (x < 5 and y > 10) {
+        \\abi (x < 5 and y > 10) {
         \\    comot true;
         \\}
         \\abeg result = x or y orelse 42;
@@ -245,7 +245,7 @@ test "Lexer: Final Test" {
         .{ .expected_type = .SEMICOLON, .expected_literal = ";" },
 
         // if logic
-        .{ .expected_type = .IF, .expected_literal = "if" },
+        .{ .expected_type = .ABI, .expected_literal = "abi" },
         .{ .expected_type = .LPAREN, .expected_literal = "(" },
         .{ .expected_type = .INTEGER, .expected_literal = "5" },
         .{ .expected_type = .LESS_THAN, .expected_literal = "<" },
@@ -256,7 +256,7 @@ test "Lexer: Final Test" {
         .{ .expected_type = .TRUE, .expected_literal = "true" },
         .{ .expected_type = .SEMICOLON, .expected_literal = ";" },
         .{ .expected_type = .RBRACE, .expected_literal = "}" },
-        .{ .expected_type = .ELSE, .expected_literal = "else" },
+        .{ .expected_type = .NASO, .expected_literal = "naso" },
         .{ .expected_type = .LBRACE, .expected_literal = "{" },
         .{ .expected_type = .COMOT, .expected_literal = "comot" },
         .{ .expected_type = .FALSE, .expected_literal = "false" },
@@ -334,7 +334,7 @@ test "Lexer: Final Test" {
         .{ .expected_type = .SEMICOLON, .expected_literal = ";" },
 
         // Testing logical operators
-        .{ .expected_type = .IF, .expected_literal = "if" },
+        .{ .expected_type = .ABI, .expected_literal = "abi" },
         .{ .expected_type = .LPAREN, .expected_literal = "(" },
         .{ .expected_type = .IDENT, .expected_literal = "x" },
         .{ .expected_type = .LESS_THAN, .expected_literal = "<" },

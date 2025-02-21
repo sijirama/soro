@@ -51,11 +51,8 @@ pub const TokenType = enum {
     TRUE, // true
     FALSE, // false
 
-    ABI, // if
+    ABI, // if - i think abi and naso is better for if else than if else itself pls
     NASO, // else
-
-    IF,
-    ELSE,
 
     AND, // instead of && which i absolutely hate even more
     OR, // instead of || which i hate with mylife
@@ -79,8 +76,8 @@ const keywordsSlice: []const KVType = &.{
     .{ "comot", .COMOT },
     .{ "true", .TRUE },
     .{ "false", .FALSE },
-    .{ "if", .IF },
-    .{ "else", .ELSE },
+    .{ "abi", .ABI },
+    .{ "naso", .NASO },
     .{ "and", .AND },
     .{ "or", .OR },
     .{ "orelse", .OR_ELSE },
