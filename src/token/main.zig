@@ -50,8 +50,13 @@ pub const TokenType = enum {
     COMOT, // return from function
     TRUE, // true
     FALSE, // false
+
+    ABI, // if
+    NASO, // else
+
     IF,
     ELSE,
+
     AND, // instead of && which i absolutely hate even more
     OR, // instead of || which i hate with mylife
     OR_ELSE, // dubbing zigs orelse for inline conditionals

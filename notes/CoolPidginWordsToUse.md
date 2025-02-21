@@ -1,0 +1,8 @@
+- biko
+- ba 
+- carry : most likely for modules
+- chai
+- confam
+- ehn
+- enta
+- haba
