@@ -110,13 +110,24 @@ pub const Compiler = struct {
                         _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
                     },
 
+                    .boolean_literal => |lit| {
+                        const constant = object.Object{ .Boolean = .{ .value = lit.value } };
+                        if (constant.Boolean.value) {
+                            _ = try self.emit(.OpTrue, &[_]u32{});
+                        } else {
+                            _ = try self.emit(.OpFalse, &[_]u32{});
+                        }
+                    },
+
                     .infix_expression => |expr| {
                         const left = expr.left.*;
                         const right = expr.right.*;
                         try self.compile(left);
                         try self.compile(right);
 
-                        // i know this is sad, but i can't swwitch overstrings in zig which is crzay so this was the next thing no vex
+                        // i know this is sad, but i can't switch overstrings in zig
+                        //which is crazy so this was the next thing, abeg no vex
+
                         if (std.mem.eql(u8, expr.operator, "+")) {
                             _ = try self.emit(.OpAdd, &[_]u32{});
                         }

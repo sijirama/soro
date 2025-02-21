@@ -4,6 +4,8 @@ const object = @import("../object/main.zig");
 const compiler = @import("../compiler/main.zig");
 
 const StackSize = 2048;
+const True = object.Object{ .Boolean = .{ .value = true } };
+const False = object.Object{ .Boolean = .{ .value = false } };
 
 pub const VM = struct {
     constants: []object.Object,
@@ -156,10 +158,18 @@ pub const VM = struct {
                 .OpPop => {
                     _ = self.pop() orelse return error.StackEmpty;
                 },
+
                 .OpAdd => try self.executeBinaryOperation(.Add),
                 .OpSub => try self.executeBinaryOperation(.Sub),
                 .OpMul => try self.executeBinaryOperation(.Mul),
                 .OpDiv => try self.executeBinaryOperation(.Div),
+
+                .OpTrue => {
+                    try self.push(True);
+                },
+                .OpFalse => {
+                    try self.push(False);
+                },
             }
         }
     }

@@ -19,10 +19,16 @@ pub const Opcode = enum(OpcodeType) {
     /// It takes one operand, which is a 2-byte index into the constants pool.
     OpConstant,
     OpPop,
+
+    // binary operations
     OpAdd,
     OpSub,
     OpMul,
     OpDiv,
+
+    // booleans
+    OpTrue,
+    OpFalse,
 };
 
 /// Defines the metadata for an opcode, such as its name and operand widths.
@@ -47,6 +53,8 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
     .OpSub = .{ .Name = "OpSub", .OperandWidths = &[_]u8{} },
     .OpMul = .{ .Name = "OpMul", .OperandWidths = &[_]u8{} },
     .OpDiv = .{ .Name = "OpDiv", .OperandWidths = &[_]u8{} },
+    .OpTrue = .{ .Name = "OpTrue", .OperandWidths = &[_]u8{} },
+    .OpFalse = .{ .Name = "OpFalse", .OperandWidths = &[_]u8{} },
 });
 
 /// Looks up the definition of an opcode by its numeric value.

@@ -267,6 +267,110 @@ test "Compiler: integer arithmetic" {
     try runCompilerTests(allocator, &test_cases);
 }
 
+test "Compiler: float arithmetic" {
+    const allocator = testing.allocator;
+
+    const make = code.MakeInstruction;
+
+    const test_cases = [_]CompilerTestCase{
+        .{
+            .input = "1.5 + 2.5",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .float = 1.5 },
+                .{ .float = 2.5 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpAdd, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1.5 - 2.5",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .float = 1.5 },
+                .{ .float = 2.5 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpSub, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1.5 * 2.5",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .float = 1.5 },
+                .{ .float = 2.5 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpMul, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1.5 / 2.5",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .float = 1.5 },
+                .{ .float = 2.5 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpDiv, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+    };
+
+    // Free the test case instructions
+    defer for (test_cases) |test_case| {
+        for (test_case.expected_instructions) |instruction| {
+            allocator.free(instruction);
+        }
+    };
+
+    try runCompilerTests(allocator, &test_cases);
+}
+
+test "Compiler: boolean expressions" {
+    const allocator = testing.allocator;
+
+    const make = code.MakeInstruction;
+
+    const test_cases = [_]CompilerTestCase{
+        .{
+            .input = "true",
+            .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpTrue, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "false",
+            .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpFalse, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+    };
+
+    // Free the test case instructions
+    defer for (test_cases) |test_case| {
+        for (test_case.expected_instructions) |instruction| {
+            allocator.free(instruction);
+        }
+    };
+
+    try runCompilerTests(allocator, &test_cases);
+}
+
 // Add this to your test file:
 test "Compiler: instructions to string" {
     const allocator = std.testing.allocator;

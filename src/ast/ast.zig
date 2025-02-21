@@ -29,9 +29,9 @@ pub const Expression = union(enum) {
     identifier: Identifier,
 
     integer_literal: IntegerLiteral,
+    float_literal: FloatLiteral, // Add this
     boolean_literal: BooleanLiteral,
     string_literal: StringLiteral,
-    float_literal: FloatLiteral, // Add this
 
     prefix_expression: PrefixExpression,
     infix_expression: InfixExpression,

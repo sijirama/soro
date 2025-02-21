@@ -100,12 +100,12 @@ test "integer arithmetic" {
         .{ .input = "100 / 10 / 2", .expected = .{ .int = 5 } },
 
         // Mixed operations
-        .{ .input = "2 + 3 * 4", .expected = .{ .int = 14 } }, // 2 + (3 * 4) = 14
-        .{ .input = "(2 + 3) * 4", .expected = .{ .int = 20 } }, // (2 + 3) * 4 = 20
-        .{ .input = "10 - 2 * 3", .expected = .{ .int = 4 } }, // 10 - (2 * 3) = 4
-        .{ .input = "(10 - 2) * 3", .expected = .{ .int = 24 } }, // (10 - 2) * 3 = 24
-        .{ .input = "20 / 4 + 3", .expected = .{ .int = 8 } }, // (20 / 4) + 3 = 8
-        .{ .input = "20 / (4 + 1)", .expected = .{ .int = 4 } }, // 20 / (4 + 1) = 4
+        .{ .input = "2 + 3 * 4", .expected = .{ .int = 14 } },
+        .{ .input = "(2 + 3) * 4", .expected = .{ .int = 20 } },
+        .{ .input = "10 - 2 * 3", .expected = .{ .int = 4 } },
+        .{ .input = "(10 - 2) * 3", .expected = .{ .int = 24 } },
+        .{ .input = "20 / 4 + 3", .expected = .{ .int = 8 } },
+        .{ .input = "20 / (4 + 1)", .expected = .{ .int = 4 } },
 
         // Edge cases
         .{ .input = "0 + 0", .expected = .{ .int = 0 } },
@@ -144,18 +144,56 @@ test "float arithmetic" {
         .{ .input = "100.0 / 10.0 / 2.0", .expected = .{ .float = 5.0 } },
 
         // Mixed operations
-        .{ .input = "2.0 + 3.0 * 4.0", .expected = .{ .float = 14.0 } }, // 2.0 + (3.0 * 4.0) = 14.0
-        .{ .input = "(2.0 + 3.0) * 4.0", .expected = .{ .float = 20.0 } }, // (2.0 + 3.0) * 4.0 = 20.0
-        .{ .input = "10.0 - 2.0 * 3.0", .expected = .{ .float = 4.0 } }, // 10.0 - (2.0 * 3.0) = 4.0
-        .{ .input = "(10.0 - 2.0) * 3.0", .expected = .{ .float = 24.0 } }, // (10.0 - 2.0) * 3.0 = 24.0
-        .{ .input = "20.0 / 4.0 + 3.0", .expected = .{ .float = 8.0 } }, // (20.0 / 4.0) + 3.0 = 8.0
-        .{ .input = "20.0 / (4.0 + 1.0)", .expected = .{ .float = 4.0 } }, // 20.0 / (4.0 + 1.0) = 4.0
+        .{ .input = "2.0 + 3.0 * 4.0", .expected = .{ .float = 14.0 } },
+        .{ .input = "(2.0 + 3.0) * 4.0", .expected = .{ .float = 20.0 } },
+        .{ .input = "10.0 - 2.0 * 3.0", .expected = .{ .float = 4.0 } },
+        .{ .input = "(10.0 - 2.0) * 3.0", .expected = .{ .float = 24.0 } },
+        .{ .input = "20.0 / 4.0 + 3.0", .expected = .{ .float = 8.0 } },
+        .{ .input = "20.0 / (4.0 + 1.0)", .expected = .{ .float = 4.0 } },
 
         // Edge cases
         .{ .input = "0.0 + 0.0", .expected = .{ .float = 0.0 } },
         .{ .input = "0.0 * 100.0", .expected = .{ .float = 0.0 } },
         .{ .input = "10.0 / 1.0", .expected = .{ .float = 10.0 } },
         .{ .input = "10.0 - 10.0", .expected = .{ .float = 0.0 } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}
+
+test "VM: boolean expressions" {
+    const test_cases = [_]VmTestCase{
+        // Boolean literals
+        .{ .input = "true", .expected = .{ .bool = true } },
+        .{ .input = "false", .expected = .{ .bool = false } },
+
+        // Negation
+        // .{ .input = "!true", .expected = .{ .boolean = false } },
+        // .{ .input = "!false", .expected = .{ .boolean = true } },
+
+        // Equality comparisons
+        //.{ .input = "true == true", .expected = .{ .boolean = true } },
+        //.{ .input = "true == false", .expected = .{ .boolean = false } },
+        //.{ .input = "false == false", .expected = .{ .boolean = true } },
+        //.{ .input = "false == true", .expected = .{ .boolean = false } },
+
+        // Inequality comparisons
+        // .{ .input = "true != true", .expected = .{ .boolean = false } },
+        // .{ .input = "true != false", .expected = .{ .boolean = true } },
+        // .{ .input = "false != false", .expected = .{ .boolean = false } },
+        // .{ .input = "false != true", .expected = .{ .boolean = true } },
+
+        // Logical AND
+        // .{ .input = "true && true", .expected = .{ .boolean = true } },
+        // .{ .input = "true && false", .expected = .{ .boolean = false } },
+        // .{ .input = "false && true", .expected = .{ .boolean = false } },
+        // .{ .input = "false && false", .expected = .{ .boolean = false } },
+
+        // Logical OR
+        // .{ .input = "true || true", .expected = .{ .boolean = true } },
+        // .{ .input = "true || false", .expected = .{ .boolean = true } },
+        // .{ .input = "false || true", .expected = .{ .boolean = true } },
+        // .{ .input = "false || false", .expected = .{ .boolean = false } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);
