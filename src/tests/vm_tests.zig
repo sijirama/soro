@@ -67,9 +67,7 @@ fn runVmTests(allocator: std.mem.Allocator, test_cases: []const VmTestCase) !voi
         defer vm.deinit(allocator);
 
         try vm.run();
-        const stackElem = vm.stackTop() orelse return error.StackEmpty;
-
-        PrintObject(stackElem);
+        const stackElem = vm.LastPoppedStackElem() orelse return error.StackEmpty;
 
         try testExpectedObject(test_case.expected, stackElem);
     }
@@ -77,10 +75,87 @@ fn runVmTests(allocator: std.mem.Allocator, test_cases: []const VmTestCase) !voi
 
 test "integer arithmetic" {
     const test_cases = [_]VmTestCase{
+        // Basic literals
         .{ .input = "1", .expected = .{ .int = 1 } },
         .{ .input = "2", .expected = .{ .int = 2 } },
+
+        // Addition
         .{ .input = "2 + 1", .expected = .{ .int = 3 } },
-        .{ .input = "1 + 2 + 3", .expected = .{ .int = 6 } }, // FIXME: This will fail until you implement addition
+        .{ .input = "1 + 2 + 3", .expected = .{ .int = 6 } },
+        .{ .input = "10 + 20 + 30", .expected = .{ .int = 60 } },
+
+        // Subtraction
+        .{ .input = "5 - 3", .expected = .{ .int = 2 } },
+        .{ .input = "10 - 2 - 3", .expected = .{ .int = 5 } },
+        .{ .input = "100 - 50 - 25", .expected = .{ .int = 25 } },
+
+        // Multiplication
+        .{ .input = "2 * 3", .expected = .{ .int = 6 } },
+        .{ .input = "4 * 5 * 2", .expected = .{ .int = 40 } },
+        .{ .input = "10 * 0", .expected = .{ .int = 0 } },
+
+        // Division
+        .{ .input = "6 / 3", .expected = .{ .int = 2 } },
+        .{ .input = "10 / 2 / 5", .expected = .{ .int = 1 } },
+        .{ .input = "100 / 10 / 2", .expected = .{ .int = 5 } },
+
+        // Mixed operations
+        .{ .input = "2 + 3 * 4", .expected = .{ .int = 14 } }, // 2 + (3 * 4) = 14
+        .{ .input = "(2 + 3) * 4", .expected = .{ .int = 20 } }, // (2 + 3) * 4 = 20
+        .{ .input = "10 - 2 * 3", .expected = .{ .int = 4 } }, // 10 - (2 * 3) = 4
+        .{ .input = "(10 - 2) * 3", .expected = .{ .int = 24 } }, // (10 - 2) * 3 = 24
+        .{ .input = "20 / 4 + 3", .expected = .{ .int = 8 } }, // (20 / 4) + 3 = 8
+        .{ .input = "20 / (4 + 1)", .expected = .{ .int = 4 } }, // 20 / (4 + 1) = 4
+
+        // Edge cases
+        .{ .input = "0 + 0", .expected = .{ .int = 0 } },
+        .{ .input = "0 * 100", .expected = .{ .int = 0 } },
+        .{ .input = "10 / 1", .expected = .{ .int = 10 } },
+        .{ .input = "10 - 10", .expected = .{ .int = 0 } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}
+
+test "float arithmetic" {
+    const test_cases = [_]VmTestCase{
+        // Basic literals
+        .{ .input = "1.0", .expected = .{ .float = 1.0 } },
+        .{ .input = "2.5", .expected = .{ .float = 2.5 } },
+
+        // Addition
+        .{ .input = "2.5 + 1.5", .expected = .{ .float = 4.0 } },
+        .{ .input = "1.2 + 2.3 + 3.4", .expected = .{ .float = 6.9 } },
+        .{ .input = "10.5 + 20.5 + 30.5", .expected = .{ .float = 61.5 } },
+
+        // Subtraction
+        .{ .input = "5.5 - 3.2", .expected = .{ .float = 2.3 } },
+        .{ .input = "10.0 - 2.5 - 3.5", .expected = .{ .float = 4.0 } },
+        .{ .input = "100.0 - 50.5 - 25.5", .expected = .{ .float = 24.0 } },
+
+        // Multiplication
+        .{ .input = "2.5 * 3.0", .expected = .{ .float = 7.5 } },
+        .{ .input = "4.0 * 5.0 * 2.0", .expected = .{ .float = 40.0 } },
+        .{ .input = "10.0 * 0.0", .expected = .{ .float = 0.0 } },
+
+        // Division
+        .{ .input = "6.0 / 3.0", .expected = .{ .float = 2.0 } },
+        .{ .input = "10.0 / 2.0 / 5.0", .expected = .{ .float = 1.0 } },
+        .{ .input = "100.0 / 10.0 / 2.0", .expected = .{ .float = 5.0 } },
+
+        // Mixed operations
+        .{ .input = "2.0 + 3.0 * 4.0", .expected = .{ .float = 14.0 } }, // 2.0 + (3.0 * 4.0) = 14.0
+        .{ .input = "(2.0 + 3.0) * 4.0", .expected = .{ .float = 20.0 } }, // (2.0 + 3.0) * 4.0 = 20.0
+        .{ .input = "10.0 - 2.0 * 3.0", .expected = .{ .float = 4.0 } }, // 10.0 - (2.0 * 3.0) = 4.0
+        .{ .input = "(10.0 - 2.0) * 3.0", .expected = .{ .float = 24.0 } }, // (10.0 - 2.0) * 3.0 = 24.0
+        .{ .input = "20.0 / 4.0 + 3.0", .expected = .{ .float = 8.0 } }, // (20.0 / 4.0) + 3.0 = 8.0
+        .{ .input = "20.0 / (4.0 + 1.0)", .expected = .{ .float = 4.0 } }, // 20.0 / (4.0 + 1.0) = 4.0
+
+        // Edge cases
+        .{ .input = "0.0 + 0.0", .expected = .{ .float = 0.0 } },
+        .{ .input = "0.0 * 100.0", .expected = .{ .float = 0.0 } },
+        .{ .input = "10.0 / 1.0", .expected = .{ .float = 10.0 } },
+        .{ .input = "10.0 - 10.0", .expected = .{ .float = 0.0 } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);

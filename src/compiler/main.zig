@@ -85,6 +85,7 @@ pub const Compiler = struct {
                     .expression_statement => |stmt| {
                         const expr = stmt.expression.*;
                         try self.compile(expr);
+                        _ = try self.emit(.OpPop, &[_]u32{});
                     },
                     .abeg_statement => |stmt| {
                         const value = stmt.value.*;
@@ -103,25 +104,36 @@ pub const Compiler = struct {
                         const const_index = try self.addConstant(constant);
                         _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
                     },
+                    .float_literal => |lit| {
+                        const constant = object.Object{ .Float = .{ .value = lit.value } };
+                        const const_index = try self.addConstant(constant);
+                        _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
+                    },
+
                     .infix_expression => |expr| {
                         const left = expr.left.*;
                         const right = expr.right.*;
                         try self.compile(left);
                         try self.compile(right);
 
+                        // i know this is sad, but i can't swwitch overstrings in zig which is crzay so this was the next thing no vex
                         if (std.mem.eql(u8, expr.operator, "+")) {
                             _ = try self.emit(.OpAdd, &[_]u32{});
                         }
+                        if (std.mem.eql(u8, expr.operator, "-")) {
+                            _ = try self.emit(.OpSub, &[_]u32{});
+                        }
+                        if (std.mem.eql(u8, expr.operator, "*")) {
+                            _ = try self.emit(.OpMul, &[_]u32{});
+                        }
+                        if (std.mem.eql(u8, expr.operator, "/")) {
+                            _ = try self.emit(.OpDiv, &[_]u32{});
+                        }
 
-                        // else if (std.mem.eql(u8, expr.operator, "-")) {
-                        //     try self.emit(.OpSubtract, {});
-                        // } else if (std.mem.eql(u8, expr.operator, "*")) {
-                        //     try self.emit(.OpMultiply, {});
-                        // } else if (std.mem.eql(u8, expr.operator, "/")) {
-                        //     try self.emit(.OpDivide, {});
-                        // } else {
-                        //     return error.UnknownOperator;
-                        // }
+                        //omo the other ones i never do like
+                        // or
+                        // and
+                        // no forget abeg
                     },
                     .prefix_expression => |expr| {
                         const right = expr.right.*;

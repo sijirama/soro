@@ -64,7 +64,7 @@ pub fn replStart() !void {
             defer vm.deinit(allocator);
 
             try vm.run();
-            const stackElem = vm.stackTop() orelse return error.StackEmpty;
+            const stackElem = vm.LastPoppedStackElem() orelse return error.StackEmpty;
 
             PrintObject(stackElem);
         } else {

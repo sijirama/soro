@@ -18,7 +18,11 @@ pub const Opcode = enum(OpcodeType) {
     /// The `OpConstant` opcode is used to load a constant value onto the stack.
     /// It takes one operand, which is a 2-byte index into the constants pool.
     OpConstant,
+    OpPop,
     OpAdd,
+    OpSub,
+    OpMul,
+    OpDiv,
 };
 
 /// Defines the metadata for an opcode, such as its name and operand widths.
@@ -38,7 +42,11 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
         .Name = "OpConstant",
         .OperandWidths = &[_]u8{2}, // 1 operand, 2 bytes wide
     },
+    .OpPop = .{ .Name = "OpPop", .OperandWidths = &[_]u8{} },
     .OpAdd = .{ .Name = "OpAdd", .OperandWidths = &[_]u8{} },
+    .OpSub = .{ .Name = "OpSub", .OperandWidths = &[_]u8{} },
+    .OpMul = .{ .Name = "OpMul", .OperandWidths = &[_]u8{} },
+    .OpDiv = .{ .Name = "OpDiv", .OperandWidths = &[_]u8{} },
 });
 
 /// Looks up the definition of an opcode by its numeric value.

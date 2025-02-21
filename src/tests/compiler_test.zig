@@ -199,6 +199,60 @@ test "Compiler: integer arithmetic" {
                 try make(allocator, .OpConstant, &[_]u32{0}),
                 try make(allocator, .OpConstant, &[_]u32{1}),
                 try make(allocator, .OpAdd, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1 - 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpSub, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1 * 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpMul, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "1 / 2",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpDiv, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+
+        .{
+            .input = "1 ; 2;",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpPop, &[_]u32{}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpPop, &[_]u32{}),
             },
         },
     };
