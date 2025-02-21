@@ -50,6 +50,37 @@ pub const VM = struct {
         return self.stack[self.sp];
     }
 
+    pub fn executeBangOperation(self: *VM) !void {
+        const operator = self.pop() orelse return error.StackUnderflow;
+
+        switch (operator) {
+            .Boolean => |lit_value| {
+                switch (lit_value.value) {
+                    true => {
+                        try self.push(False);
+                    },
+                    false => {
+                        try self.push(True);
+                    },
+                }
+            },
+            else => {
+                try self.push(False);
+            },
+        }
+    }
+
+    pub fn executeMinusOperation(self: *VM) !void {
+        const operand = self.pop() orelse return error.StackUnderflow;
+
+        try switch (operand) { // omo i confuse too, which one is try switch
+            .Integer => |lit_int| {
+                try self.push(object.Object{ .Integer = .{ .value = -lit_int.value } });
+            },
+            else => error.UnsupportedType,
+        };
+    }
+
     fn nativeBoolToBooleanObject(input: bool) object.Object {
         if (input) {
             return True;
@@ -210,6 +241,9 @@ pub const VM = struct {
                     _ = self.pop() orelse return error.StackEmpty;
                 },
 
+                .OpTrue => try self.push(True),
+                .OpFalse => try self.push(False),
+
                 .OpAdd => try self.executeBinaryOperation(.Add),
                 .OpSub => try self.executeBinaryOperation(.Sub),
                 .OpMul => try self.executeBinaryOperation(.Mul),
@@ -219,9 +253,8 @@ pub const VM = struct {
                 .OpNotEqual => try self.executeComparisonOperation(op),
                 .OpGreaterThan => try self.executeComparisonOperation(op),
                 .OpLessThan => try self.executeComparisonOperation(op),
-
-                .OpTrue => try self.push(True),
-                .OpFalse => try self.push(False),
+                .OpBang => try self.executeBangOperation(),
+                .OpMinus => try self.executeMinusOperation(),
             }
         }
     }

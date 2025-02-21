@@ -168,8 +168,10 @@ test "VM: boolean expressions" {
         .{ .input = "false", .expected = .{ .bool = false } },
 
         // Negation
-        // .{ .input = "!true", .expected = .{ .bool = false } },
-        // .{ .input = "!false", .expected = .{ .bool = true } },
+        .{ .input = "!true", .expected = .{ .bool = false } },
+        .{ .input = "!!true", .expected = .{ .bool = true } },
+        .{ .input = "!false", .expected = .{ .bool = true } },
+        .{ .input = "!!false", .expected = .{ .bool = false } },
 
         // Equality comparisons
         .{ .input = "true == true", .expected = .{ .bool = true } },
@@ -277,6 +279,21 @@ test "VM: comparison operations" {
         .{ .input = "1 < 2 == true", .expected = .{ .bool = true } },
         .{ .input = "1.5 < 2.0 == true", .expected = .{ .bool = true } },
         //.{ .input = "\"hello\" == \"hello\" == true", .expected = .{ .bool = true } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}
+
+test "Interger Prefix Operations" {
+    const test_cases = [_]VmTestCase{
+        // Basic literals
+        .{ .input = "!1", .expected = .{ .bool = false } },
+        .{ .input = "!!1", .expected = .{ .bool = true } },
+
+        .{ .input = "-1", .expected = .{ .int = -1 } },
+        .{ .input = "-2", .expected = .{ .int = -2 } },
+        .{ .input = "-50 + 100 + -50", .expected = .{ .int = 0 } },
+        .{ .input = "(5 + 10 * 2 + 15 / 3) * 2 + -10", .expected = .{ .int = 50 } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);
