@@ -168,7 +168,15 @@ pub const Compiler = struct {
                     .prefix_expression => |expr| {
                         const right = expr.right.*;
                         try self.compile(right);
+
                         // Emit the prefix operation opcode here (e.g., OpNegate, OpNot, etc.)
+                        if (std.mem.eql(u8, expr.operator, "-")) {
+                            _ = try self.emit(.OpMinus, &[_]u32{});
+                        }
+
+                        if (std.mem.eql(u8, expr.operator, "!")) {
+                            _ = try self.emit(.OpBang, &[_]u32{});
+                        }
                     },
                     else => {
                         // Handle other expression types as needed

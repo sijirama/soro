@@ -190,6 +190,18 @@ test "Compiler: integer arithmetic" {
 
     const test_cases = [_]CompilerTestCase{
         .{
+            .input = "-1",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpMinus, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+
+        .{
             .input = "1 + 2",
             .expected_constants = &[_]ExpectedConstant{
                 .{ .integer = 1 },
@@ -351,6 +363,16 @@ test "Compiler: boolean expressions" {
                 try make(allocator, .OpPop, &[_]u32{}),
             },
         },
+        .{
+            .input = "!true",
+            .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpTrue, &[_]u32{}),
+                try make(allocator, .OpBang, &[_]u32{}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+
         .{
             .input = "false",
             .expected_constants = &[_]ExpectedConstant{}, // No constants for boolean literals

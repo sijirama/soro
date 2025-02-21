@@ -31,6 +31,10 @@ pub const Opcode = enum(OpcodeType) {
     OpGreaterThan,
     OpLessThan,
 
+    // unary operations
+    OpMinus,
+    OpBang,
+
     // booleans
     OpTrue,
     OpFalse,
@@ -65,6 +69,9 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
 
     .OpGreaterThan = .{ .Name = "OpGreaterThan", .OperandWidths = &[_]u8{} },
     .OpLessThan = .{ .Name = "OpLessThan", .OperandWidths = &[_]u8{} },
+
+    .OpMinus = .{ .Name = "OpMinus", .OperandWidths = &[_]u8{} },
+    .OpBang = .{ .Name = "OpBang", .OperandWidths = &[_]u8{} },
 
     .OpTrue = .{ .Name = "OpTrue", .OperandWidths = &[_]u8{} },
     .OpFalse = .{ .Name = "OpFalse", .OperandWidths = &[_]u8{} },
