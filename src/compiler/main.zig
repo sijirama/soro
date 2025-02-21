@@ -109,6 +109,11 @@ pub const Compiler = struct {
                         const const_index = try self.addConstant(constant);
                         _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
                     },
+                    .string_literal => |lit| {
+                        const constant = object.Object{ .String = .{ .value = lit.value } };
+                        const const_index = try self.addConstant(constant);
+                        _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
+                    },
 
                     .boolean_literal => |lit| {
                         const constant = object.Object{ .Boolean = .{ .value = lit.value } };

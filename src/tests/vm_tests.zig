@@ -168,32 +168,115 @@ test "VM: boolean expressions" {
         .{ .input = "false", .expected = .{ .bool = false } },
 
         // Negation
-        // .{ .input = "!true", .expected = .{ .boolean = false } },
-        // .{ .input = "!false", .expected = .{ .boolean = true } },
+        // .{ .input = "!true", .expected = .{ .bool = false } },
+        // .{ .input = "!false", .expected = .{ .bool = true } },
 
         // Equality comparisons
-        //.{ .input = "true == true", .expected = .{ .boolean = true } },
-        //.{ .input = "true == false", .expected = .{ .boolean = false } },
-        //.{ .input = "false == false", .expected = .{ .boolean = true } },
-        //.{ .input = "false == true", .expected = .{ .boolean = false } },
+        .{ .input = "true == true", .expected = .{ .bool = true } },
+        .{ .input = "true == false", .expected = .{ .bool = false } },
+        .{ .input = "false == false", .expected = .{ .bool = true } },
+        .{ .input = "false == true", .expected = .{ .bool = false } },
 
         // Inequality comparisons
-        // .{ .input = "true != true", .expected = .{ .boolean = false } },
-        // .{ .input = "true != false", .expected = .{ .boolean = true } },
-        // .{ .input = "false != false", .expected = .{ .boolean = false } },
-        // .{ .input = "false != true", .expected = .{ .boolean = true } },
+        .{ .input = "true != true", .expected = .{ .bool = false } },
+        .{ .input = "true != false", .expected = .{ .bool = true } },
+        .{ .input = "false != false", .expected = .{ .bool = false } },
+        .{ .input = "false != true", .expected = .{ .bool = true } },
 
         // Logical AND
-        // .{ .input = "true && true", .expected = .{ .boolean = true } },
-        // .{ .input = "true && false", .expected = .{ .boolean = false } },
-        // .{ .input = "false && true", .expected = .{ .boolean = false } },
-        // .{ .input = "false && false", .expected = .{ .boolean = false } },
+        // .{ .input = "true && true", .expected = .{ .bool = true } },
+        // .{ .input = "true && false", .expected = .{ .bool = false } },
+        // .{ .input = "false && true", .expected = .{ .bool = false } },
+        // .{ .input = "false && false", .expected = .{ .bool = false } },
 
         // Logical OR
-        // .{ .input = "true || true", .expected = .{ .boolean = true } },
-        // .{ .input = "true || false", .expected = .{ .boolean = true } },
-        // .{ .input = "false || true", .expected = .{ .boolean = true } },
-        // .{ .input = "false || false", .expected = .{ .boolean = false } },
+        // .{ .input = "true || true", .expected = .{ .bool = true } },
+        // .{ .input = "true || false", .expected = .{ .bool = true } },
+        // .{ .input = "false || true", .expected = .{ .bool = true } },
+        // .{ .input = "false || false", .expected = .{ .bool = false } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}
+
+test "VM: string operations" {
+    const test_cases = [_]VmTestCase{
+        // String literals
+        //.{ .input = "\"hello\"", .expected = .{ .string = "hello" } },
+        //.{ .input = "'abc' > 'ab'", .expected = .{ .bool = true } },
+        //.{ .input = "\"\"", .expected = .{ .string = "" } },
+
+        // String concatenation
+        //.{ .input = "\"hello\" + \" world\"", .expected = .{ .string = "hello world" } },
+        //.{ .input = "\"a\" + \"b\" + \"c\"", .expected = .{ .string = "abc" } },
+        //.{ .input = "\"\" + \"test\"", .expected = .{ .string = "test" } },
+        //.{ .input = "\"test\" + \"\"", .expected = .{ .string = "test" } },
+        //.{ .input = "\"hello\" + \" \" + \"world\"", .expected = .{ .string = "hello world" } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}
+
+test "VM: comparison operations" {
+    const test_cases = [_]VmTestCase{
+        // Integer comparisons
+        .{ .input = "1 < 2", .expected = .{ .bool = true } },
+        .{ .input = "2 < 1", .expected = .{ .bool = false } },
+        .{ .input = "1 > 2", .expected = .{ .bool = false } },
+        .{ .input = "2 > 1", .expected = .{ .bool = true } },
+        .{ .input = "1 == 1", .expected = .{ .bool = true } },
+        .{ .input = "1 != 1", .expected = .{ .bool = false } },
+        .{ .input = "1 == 2", .expected = .{ .bool = false } },
+        .{ .input = "1 != 2", .expected = .{ .bool = true } },
+
+        // Float comparisons
+        .{ .input = "1.5 < 2.0", .expected = .{ .bool = true } },
+        .{ .input = "2.0 < 1.5", .expected = .{ .bool = false } },
+        .{ .input = "1.5 > 2.0", .expected = .{ .bool = false } },
+        .{ .input = "2.0 > 1.5", .expected = .{ .bool = true } },
+        .{ .input = "1.5 == 1.5", .expected = .{ .bool = true } },
+        .{ .input = "1.5 != 1.5", .expected = .{ .bool = false } },
+        .{ .input = "1.5 == 2.0", .expected = .{ .bool = false } },
+        .{ .input = "1.5 != 2.0", .expected = .{ .bool = true } },
+
+        // Mixed number type comparisons
+        .{ .input = "1 < 2.5", .expected = .{ .bool = true } },
+        .{ .input = "2.5 < 1", .expected = .{ .bool = false } },
+        .{ .input = "1 > 2.5", .expected = .{ .bool = false } },
+        .{ .input = "2.5 > 1", .expected = .{ .bool = true } },
+        .{ .input = "1 == 1.0", .expected = .{ .bool = true } },
+        .{ .input = "1 != 1.0", .expected = .{ .bool = false } },
+        .{ .input = "1 == 2.0", .expected = .{ .bool = false } },
+        .{ .input = "1 != 2.0", .expected = .{ .bool = true } },
+
+        // String comparisons (based on length)
+        // .{ .input = "\"abc\" > \"ab\"", .expected = .{ .bool = true } },
+        // .{ .input = "\"ab\" < \"abc\"", .expected = .{ .bool = true } },
+        // .{ .input = "\"abc\" == \"abc\"", .expected = .{ .bool = true } },
+        // .{ .input = "\"abc\" != \"def\"", .expected = .{ .bool = true } },
+        // .{ .input = "\"\" == \"\"", .expected = .{ .bool = true } },
+        // .{ .input = "\"\" < \"a\"", .expected = .{ .bool = true } },
+
+        // Boolean comparisons
+        .{ .input = "true == true", .expected = .{ .bool = true } },
+        .{ .input = "false == false", .expected = .{ .bool = true } },
+        .{ .input = "true != false", .expected = .{ .bool = true } },
+        .{ .input = "false != true", .expected = .{ .bool = true } },
+        .{ .input = "true == false", .expected = .{ .bool = false } },
+        .{ .input = "false == true", .expected = .{ .bool = false } },
+
+        // Complex expressions
+        .{ .input = "(1 < 2) == true", .expected = .{ .bool = true } },
+        .{ .input = "(1 > 2) == false", .expected = .{ .bool = true } },
+        .{ .input = "(1 == 1) == true", .expected = .{ .bool = true } },
+        .{ .input = "(1 != 1) == false", .expected = .{ .bool = true } },
+        .{ .input = "(2.5 > 1) == true", .expected = .{ .bool = true } },
+        //.{ .input = "(\"abc\" > \"ab\") == true", .expected = .{ .bool = true } },
+
+        // Chained comparisons
+        .{ .input = "1 < 2 == true", .expected = .{ .bool = true } },
+        .{ .input = "1.5 < 2.0 == true", .expected = .{ .bool = true } },
+        //.{ .input = "\"hello\" == \"hello\" == true", .expected = .{ .bool = true } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);

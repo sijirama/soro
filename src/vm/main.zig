@@ -50,11 +50,11 @@ pub const VM = struct {
         return self.stack[self.sp];
     }
 
-    fn getInteger(obj: object.Object) !i64 {
-        return switch (obj) {
-            .Integer => |i| i.value,
-            else => error.TypeError,
-        };
+    fn nativeBoolToBooleanObject(input: bool) object.Object {
+        if (input) {
+            return True;
+        }
+        return False;
     }
 
     fn executeBinaryOperation(self: *VM, op: InfixOperators) !void {
@@ -88,6 +88,15 @@ pub const VM = struct {
                     else => return error.TypeError,
                 }
             },
+            .String => |left_str| {
+                switch (right) {
+                    .String => |right_str| {
+                        const result = try self.executeStringBinaryOperation(left_str.value, right_str.value, op);
+                        try self.push(result);
+                    },
+                    else => return error.TypeError,
+                }
+            },
             else => return error.TypeError,
         }
     }
@@ -112,30 +121,72 @@ pub const VM = struct {
         };
     }
 
-    //NOTE: omo the issues here was that there's no way i know to concatenate this strings without allocating data and where to deallocate it was very tricky,
-    //i'll come back to it, for now you can't append strings
+    fn executeStringBinaryOperation(self: *VM, left: []const u8, right: []const u8, op: InfixOperators) !object.Object {
+        return switch (op) {
+            .Add => {
+                var list = std.ArrayList(u8).init(self.allocator);
+                defer list.deinit(); // This will clean up the ArrayList if we encounter an error
 
-    // fn executeStringBinaryOperation(allocator: std.mem.Allocator, left: []const u8, right: []const u8, op: InfixOperators) ![]const u8 {
-    //     return switch (op) {
-    //         .Add => {
-    //             // Allocate a new slice to hold the concatenated result
-    //             const result = try allocator.alloc(u8, left.len + right.len);
-    //             // Copy the left string into the result
-    //             @memcpy(result[0..left.len], left);
-    //             // Copy the right string into the result
-    //             @memcpy(result[left.len..], right);
-    //             return result;
-    //         },
-    //         else => return error.UnsupportedOperation,
-    //     };
-    // }
-    //
-    // fn executeStringBinaryOperation2(left: []const u8, right: []const u8, op: InfixOperators) ![]const u8 {
-    //     return switch (op) {
-    //         .Add => left ++ right,
-    //         else => return error.UnsupportedOperation,
-    //     };
-    // }
+                try list.appendSlice(left);
+                try list.appendSlice(right);
+
+                // toOwnedSlice() transfers ownership of the underlying memory to the caller
+                // and resets the ArrayList to empty state
+                return object.Object{ .String = .{ .value = try list.toOwnedSlice() } };
+            },
+            else => error.UnsupportedOperation,
+        };
+    }
+
+    // Add these type-specific comparison functions
+    fn compareValues(comptime T: type, a: T, b: T, op: code.Opcode) bool {
+        return switch (op) {
+            .OpEqual => a == b,
+            .OpNotEqual => a != b,
+            .OpGreaterThan => a > b,
+            .OpLessThan => a < b,
+            else => unreachable,
+        };
+    }
+
+    fn compareStrings(a: []const u8, b: []const u8, op: code.Opcode) bool {
+        return switch (op) {
+            .OpEqual => std.mem.eql(u8, a, b),
+            .OpNotEqual => !std.mem.eql(u8, a, b),
+            .OpGreaterThan => a.len > b.len,
+            .OpLessThan => a.len < b.len,
+            else => unreachable,
+        };
+    }
+
+    fn executeComparisonOperation(self: *VM, op: code.Opcode) !void {
+        const right = self.pop() orelse return error.StackUnderflow;
+        const left = self.pop() orelse return error.StackUnderflow;
+
+        const result = switch (left) {
+            .Integer => |left_int| switch (right) {
+                .Integer => |right_int| compareValues(i64, left_int.value, right_int.value, op),
+                .Float => |right_float| compareValues(f64, @floatFromInt(left_int.value), right_float.value, op),
+                else => return error.TypeError,
+            },
+            .Float => |left_float| switch (right) {
+                .Integer => |right_int| compareValues(f64, left_float.value, @floatFromInt(right_int.value), op),
+                .Float => |right_float| compareValues(f64, left_float.value, right_float.value, op),
+                else => return error.TypeError,
+            },
+            .String => |left_str| switch (right) {
+                .String => |right_str| compareStrings(left_str.value, right_str.value, op),
+                else => return error.TypeError,
+            },
+            .Boolean => |left_bool| switch (right) {
+                .Boolean => |right_bool| if (op == .OpEqual) left_bool.value == right_bool.value else if (op == .OpNotEqual) left_bool.value != right_bool.value else return error.InvalidOperator,
+                else => return error.TypeError,
+            },
+            else => return error.TypeError,
+        };
+
+        try self.push(nativeBoolToBooleanObject(result));
+    }
 
     pub fn run(self: *VM) !void {
         //std.debug.print("Bytecode: {any}\n", .{self.instructions});
@@ -164,12 +215,13 @@ pub const VM = struct {
                 .OpMul => try self.executeBinaryOperation(.Mul),
                 .OpDiv => try self.executeBinaryOperation(.Div),
 
-                .OpTrue => {
-                    try self.push(True);
-                },
-                .OpFalse => {
-                    try self.push(False);
-                },
+                .OpEqual => try self.executeComparisonOperation(op),
+                .OpNotEqual => try self.executeComparisonOperation(op),
+                .OpGreaterThan => try self.executeComparisonOperation(op),
+                .OpLessThan => try self.executeComparisonOperation(op),
+
+                .OpTrue => try self.push(True),
+                .OpFalse => try self.push(False),
             }
         }
     }
