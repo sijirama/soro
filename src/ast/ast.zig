@@ -36,6 +36,8 @@ pub const Expression = union(enum) {
     prefix_expression: PrefixExpression,
     infix_expression: InfixExpression,
 
+    if_expression: IfExpression,
+
     pub fn tokenLiteral(self: Expression) []const u8 {
         return switch (self) {
             .identifier => |id| id.tokenLiteral(),
@@ -45,6 +47,7 @@ pub const Expression = union(enum) {
             .string_literal => |lit| lit.tokenLiteral(),
             .prefix_expression => |expr| expr.tokenLiteral(),
             .infix_expression => |expr| expr.tokenLiteral(),
+            .if_expression => |expr| expr.tokenLiteral(),
         };
     }
 };
@@ -53,12 +56,14 @@ pub const Statement = union(enum) {
     abeg_statement: AbegStatement,
     comot_statement: ComotStatement,
     expression_statement: ExpressionStatement,
+    block_statement: BlockStatement,
 
     pub fn tokenLiteral(self: Statement) []const u8 {
         return switch (self) {
             .abeg_statement => |stmt| stmt.tokenLiteral(),
             .comot_statement => |stmt| stmt.tokenLiteral(),
             .expression_statement => |stmt| stmt.tokenLiteral(),
+            .block_statement => |stmt| stmt.tokenLiteral(),
         };
     }
 };
@@ -159,5 +164,48 @@ pub const ExpressionStatement = struct {
 
     pub fn tokenLiteral(self: ExpressionStatement) []const u8 {
         return self.token.value;
+    }
+};
+
+pub const BlockStatement = struct {
+    token: Token, // the { token
+    statements: std.ArrayList(Statement),
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) BlockStatement {
+        return BlockStatement{
+            .token = undefined,
+            .statements = std.ArrayList(Statement).init(allocator),
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *BlockStatement) void {
+        std.debug.print("Deinitializing block statement\n", .{});
+        self.statements.deinit();
+    }
+
+    pub fn tokenLiteral(self: BlockStatement) []const u8 {
+        return self.token.value;
+    }
+};
+
+pub const IfExpression = struct {
+    token: Token, // The 'if' token
+    condition: *Expression,
+    consequence: *BlockStatement,
+    alternative: ?*BlockStatement, // Optional else block
+
+    pub fn tokenLiteral(self: IfExpression) []const u8 {
+        return self.token.value;
+    }
+
+    pub fn deinit(self: *IfExpression) void {
+        std.debug.print("Deinitializing if expression\n", .{});
+        //allocator.destroy(self.condition); // Free the condition expression
+        self.consequence.deinit(); // Free the consequence block
+        if (self.alternative) |alt| {
+            alt.deinit(); // Free the alternative block if it exists
+        }
     }
 };

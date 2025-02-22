@@ -78,6 +78,7 @@ pub const Parser = struct {
         parser.registerPrefix(TokenType.MINUS, Parser.parsePrefixExpression);
         parser.registerPrefix(TokenType.BANG, Parser.parsePrefixExpression);
         parser.registerPrefix(TokenType.LPAREN, Parser.parseGroupedExpression);
+        parser.registerPrefix(TokenType.ABI, Parser.parseIfExpression);
 
         // register infix functions
         parser.registerInfix(TokenType.PLUS, Parser.parseInfixExpression);
@@ -103,7 +104,13 @@ pub const Parser = struct {
 
     pub fn deinit(self: *Parser) void {
         for (self.allocated_expressions.items) |expr| {
-            self.allocator.destroy(expr); // Free memory
+            switch (expr.*) {
+                .if_expression => |*if_expr| {
+                    if_expr.deinit(); // Deinitialize the if expression
+                },
+                else => {},
+            }
+            self.allocator.destroy(expr);
         }
         self.allocated_expressions.deinit();
         self.errors.deinit();
@@ -396,6 +403,7 @@ pub const Parser = struct {
         return ast.Statement{ .abeg_statement = stmt };
     }
 
+    /// Deprecated, left here for idek bro, why is this actually still here, i'm lowkey just chilling
     pub fn parseOldAbegStatement(self: *Parser) ?ast.Statement {
 
         // Create the AbegStatement node
@@ -545,6 +553,67 @@ pub const Parser = struct {
         }
 
         return ast.Statement{ .expression_statement = stmt };
+    }
+
+    // parse block statement, this usually consists of a set of statements but is not the program itself which is the same form
+    // pub fn parseBlockStatement(self: *Parser) ?ast.Statement {
+    //     const first_token = self.current_token;
+    //
+    //     var block = ast.BlockStatement.init(self.allocator);
+    //     block.token = first_token;
+    //
+    //     self.nextToken(); // Move past the opening brace
+    //
+    //     block.statements = std.ArrayList(ast.Statement).init(block.allocator);
+    //
+    //     while (!self.curTokenIs(.RBRACE) and !self.curTokenIs(.EOF)) {
+    //         if (self.parseStatement()) |statement| {
+    //             block.statements.append(statement) catch {
+    //                 self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish!");
+    //                 block.deinit(); // Clean up if append fails
+    //                 return null;
+    //             };
+    //         }
+    //         self.nextToken();
+    //     }
+    //
+    //     return ast.Statement{ .block_statement = block };
+    // }
+
+    pub fn parseBlockStatement(self: *Parser) ?ast.Statement {
+        const first_token = self.current_token;
+        //std.debug.print("Parsing block statement starting with token: {s}\n", .{first_token.value});
+
+        var block = ast.BlockStatement.init(self.allocator);
+        block.token = first_token;
+
+        self.nextToken(); // Move past the opening brace
+
+        while (!self.curTokenIs(.RBRACE) and !self.curTokenIs(.EOF)) {
+            //std.debug.print("Current token in block: {s}\n", .{self.current_token.value});
+
+            if (self.parseStatement()) |statement| {
+                //std.debug.print("Parsed statement: {any}\n", .{statement});
+                block.statements.append(statement) catch {
+                    self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish!");
+                    block.deinit(); // Clean up if append fails
+                    return null;
+                };
+            } else {
+                std.debug.print("Skipping invalid statement\n", .{});
+                self.skipInvalidStatement(); // Skip invalid statements
+            }
+            self.nextToken();
+        }
+
+        if (self.curTokenIs(.EOF)) {
+            std.debug.print("Reached EOF before closing brace\n", .{});
+            self.addError(.MissingToken, .Error, first_token, null, null, "Missing closing brace '}'");
+            return null;
+        }
+
+        std.debug.print("Finished parsing block statement with {d} statements\n", .{block.statements.items.len});
+        return ast.Statement{ .block_statement = block };
     }
 
     pub fn parseExpression(self: *Parser, precedence: Precedence) ?*ast.Expression {
@@ -772,6 +841,183 @@ pub const Parser = struct {
 
         return expr;
     }
+
+    pub fn parseIfExpression(self: *Parser) ?*ast.Expression {
+        std.debug.print("Parsing if expression starting with token: {s}\n", .{self.current_token.value});
+
+        const expr = self.allocator.create(ast.Expression) catch {
+            self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish! I no fit create if expression");
+            return null;
+        };
+
+        const if_token = self.current_token; // Save 'abi' token
+
+        // Expect opening parenthesis after 'abi'
+        if (!self.expectPeek(.LPAREN)) {
+            std.debug.print("Missing opening parenthesis after 'abi'\n", .{});
+            return null;
+        }
+
+        self.nextToken(); // Move to condition expression
+
+        // Parse condition
+        std.debug.print("Parsing condition expression\n", .{});
+        const condition = self.parseExpression(.LOWEST) orelse {
+            std.debug.print("Failed to parse condition expression\n", .{});
+            return null;
+        };
+
+        // Expect closing parenthesis
+        if (!self.expectPeek(.RPAREN)) {
+            std.debug.print("Missing closing parenthesis after condition\n", .{});
+            return null;
+        }
+
+        // Expect opening brace for consequence block
+        if (!self.expectPeek(.LBRACE)) {
+            std.debug.print("Missing opening brace for consequence block\n", .{});
+            return null;
+        }
+
+        // Parse consequence block
+        std.debug.print("Parsing consequence block\n", .{});
+        const consequence = if (self.parseBlockStatement()) |stmt| blk: {
+            if (stmt == .block_statement) {
+                break :blk &stmt.block_statement;
+            } else {
+                self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
+                return null;
+            }
+        } else {
+            std.debug.print("Failed to parse consequence block\n", .{});
+            return null;
+        };
+
+        // Parse optional else block
+        var alternative: ?*ast.BlockStatement = null;
+        if (self.peek_token.type == .NASO) {
+            std.debug.print("Parsing naso (else) block\n", .{});
+            self.nextToken(); // Consume 'naso'
+
+            if (!self.expectPeek(.LBRACE)) {
+                std.debug.print("Missing opening brace for naso block\n", .{});
+                return null;
+            }
+
+            // Parse else block
+            if (self.parseBlockStatement()) |*stmt| {
+                if (stmt.* == .block_statement) {
+                    alternative = @constCast(&stmt.block_statement);
+                } else {
+                    self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
+                    return null;
+                }
+            } else {
+                std.debug.print("Failed to parse naso block\n", .{});
+                return null;
+            }
+        }
+
+        // Create and return the if expression
+        expr.* = .{
+            .if_expression = .{
+                .token = if_token,
+                .condition = condition,
+                .consequence = @constCast(consequence),
+                .alternative = alternative,
+            },
+        };
+
+        // Track the allocated expression
+        self.allocated_expressions.append(expr) catch {
+            self.addError(.InvalidExpression, .Fatal, if_token, null, null, "Memory don finish! I no fit track if expression");
+            return null;
+        };
+
+        std.debug.print("Successfully parsed if expression\n", .{});
+        return expr;
+    }
+
+    // pub fn parseIfExpression(self: *Parser) ?*ast.Expression {
+    //
+    //     // Allocate memory for the Expression union
+    //     const expr = self.allocator.create(ast.Expression) catch {
+    //         self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish! I no fit create if expression");
+    //         return null;
+    //     };
+    //
+    //     const if_token = self.current_token; // Save 'abi' token
+    //
+    //     // Expect opening parenthesis after 'abi'
+    //     if (!self.expectPeek(.LPAREN)) {
+    //         return null;
+    //     }
+    //
+    //     self.nextToken(); // Move to condition expression
+    //
+    //     // Parse condition
+    //     const condition = self.parseExpression(.LOWEST) orelse {
+    //         return null;
+    //     };
+    //
+    //     // Expect closing parenthesis
+    //     if (!self.expectPeek(.RPAREN)) {
+    //         return null;
+    //     }
+    //
+    //     // Expect opening brace for consequence block
+    //     if (!self.expectPeek(.LBRACE)) {
+    //         return null;
+    //     }
+    //
+    //     // Parse consequence block
+    //     const consequence = if (self.parseBlockStatement()) |stmt| blk: {
+    //         if (stmt == .block_statement) {
+    //             break :blk &stmt.block_statement;
+    //         } else {
+    //             self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
+    //             return null;
+    //         }
+    //     } else return null;
+    //
+    //     // Parse optional else block
+    //     var alternative: ?*ast.BlockStatement = null;
+    //     if (self.peek_token.type == .NASO) {
+    //         self.nextToken(); // Consume 'naso'
+    //
+    //         if (!self.expectPeek(.LBRACE)) {
+    //             return null;
+    //         }
+    //
+    //         // Parse else block
+    //         if (self.parseBlockStatement()) |*stmt| {
+    //             if (stmt.* == .block_statement) {
+    //                 alternative = @constCast(&stmt.block_statement);
+    //             } else {
+    //                 self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
+    //                 return null;
+    //             }
+    //         } else return null;
+    //     }
+    //
+    //     // Create and return the if expression
+    //     expr.* = .{
+    //         .if_expression = .{
+    //             .token = if_token,
+    //             .condition = condition,
+    //             .consequence = @constCast(consequence),
+    //             .alternative = alternative,
+    //         },
+    //     };
+    //
+    //     // Track the allocated expression
+    //     self.allocated_expressions.append(expr) catch {
+    //         self.addError(.InvalidExpression, .Fatal, if_token, null, null, "Memory don finish! I no fit track if expression");
+    //         return null;
+    //     };
+    //
+    //     return expr;
+    // }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
     // Infix Functions

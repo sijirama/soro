@@ -95,6 +95,11 @@ pub const Compiler = struct {
                         const value = stmt.value.*;
                         try self.compile(value);
                     },
+                    .block_statement => |block| {
+                        for (block.statements.items) |stmt| {
+                            try self.compile(stmt);
+                        }
+                    },
                 }
             },
             ast.Expression => {
