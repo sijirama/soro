@@ -182,7 +182,17 @@ pub const BlockStatement = struct {
 
     pub fn deinit(self: *BlockStatement) void {
         std.debug.print("Deinitializing block statement\n", .{});
+        for (self.statements.items) |stmt| {
+            switch (stmt) {
+                .block_statement => |blk_stmt| {
+                    const blk = @constCast(&blk_stmt);
+                    blk.deinit();
+                },
+                else => {},
+            }
+        }
         self.statements.deinit();
+        std.debug.print("Deinitialized block statement\n", .{});
     }
 
     pub fn tokenLiteral(self: BlockStatement) []const u8 {
@@ -200,12 +210,18 @@ pub const IfExpression = struct {
         return self.token.value;
     }
 
-    pub fn deinit(self: *IfExpression) void {
-        std.debug.print("Deinitializing if expression\n", .{});
-        //allocator.destroy(self.condition); // Free the condition expression
-        self.consequence.deinit(); // Free the consequence block
+    pub fn deinit(self: *IfExpression, allocator: std.mem.Allocator) void {
+        // Free the condition expression
+        allocator.destroy(self.condition);
+
+        // Free the consequence block
+        self.consequence.deinit();
+        allocator.destroy(self.consequence);
+
+        // Free the alternative block if it exists
         if (self.alternative) |alt| {
-            alt.deinit(); // Free the alternative block if it exists
+            alt.deinit();
+            allocator.destroy(alt);
         }
     }
 };

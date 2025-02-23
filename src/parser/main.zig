@@ -50,22 +50,28 @@ pub const Parser = struct {
 
     prefixParseFns: std.AutoHashMap(TokenType, PrefixParseFn),
     infixParseFns: std.AutoHashMap(TokenType, InfixParseFn),
+
     allocated_expressions: std.ArrayList(*ast.Expression),
+    allocated_block_statements: std.ArrayList(*ast.BlockStatement),
 
     pub fn init(allocator: std.mem.Allocator, lexer: *Lexer) Parser {
 
         // initialize the parser
         var parser = Parser{
             .lexer = lexer,
+
             .current_token = undefined,
             .peek_token = undefined,
+
             .allocator = allocator,
+
             .errors = std.ArrayList(ParserError).init(allocator),
 
             .prefixParseFns = std.AutoHashMap(TokenType, PrefixParseFn).init(allocator),
             .infixParseFns = std.AutoHashMap(TokenType, InfixParseFn).init(allocator),
 
             .allocated_expressions = std.ArrayList(*ast.Expression).init(allocator),
+            .allocated_block_statements = std.ArrayList(*ast.BlockStatement).init(allocator),
         };
 
         // register prefix functions
@@ -103,16 +109,20 @@ pub const Parser = struct {
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
 
     pub fn deinit(self: *Parser) void {
+
+        // Free all expressions
         for (self.allocated_expressions.items) |expr| {
-            switch (expr.*) {
-                .if_expression => |*if_expr| {
-                    if_expr.deinit(); // Deinitialize the if expression
-                },
-                else => {},
-            }
             self.allocator.destroy(expr);
         }
         self.allocated_expressions.deinit();
+
+        // Free all block statements
+        for (self.allocated_block_statements.items) |block| {
+            block.deinit();
+            self.allocator.destroy(block);
+        }
+        self.allocated_block_statements.deinit(); // deinit the block statements array
+
         self.errors.deinit();
         self.prefixParseFns.deinit();
         self.infixParseFns.deinit();
@@ -608,9 +618,13 @@ pub const Parser = struct {
 
         if (self.curTokenIs(.EOF)) {
             std.debug.print("Reached EOF before closing brace\n", .{});
-            self.addError(.MissingToken, .Error, first_token, null, null, "Missing closing brace '}'");
+            self.addError(.MissingToken, .Error, first_token, null, null, "Missing closing brace");
             return null;
         }
+
+        self.allocated_block_statements.append(&block) catch {
+            return null;
+        };
 
         std.debug.print("Finished parsing block statement with {d} statements\n", .{block.statements.items.len});
         return ast.Statement{ .block_statement = block };
@@ -843,7 +857,7 @@ pub const Parser = struct {
     }
 
     pub fn parseIfExpression(self: *Parser) ?*ast.Expression {
-        std.debug.print("Parsing if expression starting with token: {s}\n", .{self.current_token.value});
+        //std.debug.print("Parsing if expression starting with token: {s}\n", .{self.current_token.value});
 
         const expr = self.allocator.create(ast.Expression) catch {
             self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish! I no fit create if expression");
@@ -861,7 +875,7 @@ pub const Parser = struct {
         self.nextToken(); // Move to condition expression
 
         // Parse condition
-        std.debug.print("Parsing condition expression\n", .{});
+        //std.debug.print("Parsing condition expression\n", .{});
         const condition = self.parseExpression(.LOWEST) orelse {
             std.debug.print("Failed to parse condition expression\n", .{});
             return null;
@@ -880,7 +894,7 @@ pub const Parser = struct {
         }
 
         // Parse consequence block
-        std.debug.print("Parsing consequence block\n", .{});
+        //std.debug.print("Parsing consequence block\n", .{});
         const consequence = if (self.parseBlockStatement()) |stmt| blk: {
             if (stmt == .block_statement) {
                 break :blk &stmt.block_statement;
@@ -917,6 +931,9 @@ pub const Parser = struct {
                 return null;
             }
         }
+
+        // std.debug.print("\nCONSEQUENCE: {any}\n", .{consequence});
+        // std.debug.print("\nALTERNATIVE: {any}\n", .{alternative});
 
         // Create and return the if expression
         expr.* = .{

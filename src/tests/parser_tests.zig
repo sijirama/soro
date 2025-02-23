@@ -608,7 +608,7 @@ test "Parser: If expression without naso block" {
     defer program.deinit();
 
     std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
-    //try testing.expectEqual(program.statements.items.len, 1);
+    try testing.expectEqual(program.statements.items.len, 1);
 
     // const stmt = program.statements.items[0];
     // try testing.expect(stmt == .expression_statement);
