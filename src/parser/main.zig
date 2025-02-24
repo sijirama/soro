@@ -702,8 +702,13 @@ pub const Parser = struct {
             return null;
         };
 
+        const consequence = self.arena.allocator().create(ast.BlockStatement) catch {
+            self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish!");
+            return null;
+        };
+
         // Convert consequence to BlockStatement
-        const consequence = switch (consequence_stmt) {
+        consequence.* = switch (consequence_stmt) {
             .block_statement => |blk| blk,
             else => {
                 self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
@@ -716,33 +721,48 @@ pub const Parser = struct {
             .if_expression = .{
                 .token = if_token,
                 .condition = condition,
-                .consequence = @constCast(&consequence),
+                .consequence = consequence,
                 .alternative = null,
             },
         };
 
+        // std.debug.print("\nBEFORE PARSING ALTERNATIVE\n", .{});
+        // std.debug.print("\nCONDITION: {any}\n", .{expr.if_expression.condition});
+        // std.debug.print("\nCONSEQUENCE: {any}\n", .{expr.if_expression.consequence.statements.items[0]});
+        // std.debug.print("\nALTERNATIVE: {?}\n\n", .{expr.if_expression.alternative});
+
         // Parse optional else block
         if (self.peek_token.type == .NASO) {
-            self.nextToken(); // Consume 'naso'
-
+            self.nextToken();
             if (!self.expectPeek(.LBRACE)) {
                 return null;
             }
-
             if (self.parseBlockStatement()) |alternative_stmt| {
-                switch (alternative_stmt) {
-                    .block_statement => |*blk| {
-                        expr.if_expression.alternative = @constCast(blk);
-                    },
+                const alternative = self.arena.allocator().create(ast.BlockStatement) catch {
+                    self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish!");
+                    return null;
+                };
+                alternative.* = switch (alternative_stmt) {
+                    .block_statement => |blk| blk,
                     else => {
                         self.addError(.InvalidExpression, .Error, self.current_token, null, null, "Expected block statement");
                         return null;
                     },
-                }
+                };
+                expr.if_expression.alternative = alternative;
             } else {
                 return null;
             }
         }
+
+        // std.debug.print("\nAFTER PARSING ALTERNATIVE\n", .{});
+        // std.debug.print("\nCONDITION: {any}\n", .{expr.if_expression.condition});
+        // std.debug.print("\nCONSEQUENCE: {any}\n", .{expr.if_expression.consequence.statements.items[0]});
+        // if (expr.if_expression.alternative) |alt| {
+        //     std.debug.print("\nALTERNATIVE: {any}\n\n", .{alt.statements.items[0]});
+        // } else {
+        //     std.debug.print("\nALTERNATIVE: null\n\n", .{});
+        // }
 
         return expr;
     }

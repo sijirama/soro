@@ -170,57 +170,17 @@ pub const ExpressionStatement = struct {
 pub const BlockStatement = struct {
     token: Token,
     statements: std.ArrayList(Statement),
-    //allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, token: Token) BlockStatement {
         return .{
             .token = token,
             .statements = std.ArrayList(Statement).init(allocator),
-            //.allocator = allocator,
         };
     }
 
     pub fn tokenLiteral(self: BlockStatement) []const u8 {
         return self.token.value;
     }
-
-    // pub fn deinit(self: *BlockStatement) void {
-    //     std.debug.print("Deinitializing BlockStatement with {} statements\n", .{self.statements.items.len});
-    //
-    //     // First deinit any nested statements
-    //     for (self.statements.items) |*stmt| {
-    //         switch (stmt.*) {
-    //             .block_statement => |*block| {
-    //                 std.debug.print("Deinitializing nested BlockStatement\n", .{});
-    //                 block.deinit();
-    //             },
-    //             .expression_statement => |expr| {
-    //                 std.debug.print("Deinitializing ExpressionStatement\n", .{});
-    //                 // Handle expression cleanup if needed
-    //                 switch (expr.expression.*) {
-    //                     .if_expression => |*if_expr| {
-    //                         std.debug.print("Deinitializing IfExpression inside ExpressionStatement\n", .{});
-    //                         if_expr.consequence.deinit();
-    //                         if (if_expr.alternative) |alternative| {
-    //                             alternative.deinit();
-    //                         }
-    //                     },
-    //                     else => {
-    //                         std.debug.print("Skipping expression cleanup for type: {}\n", .{expr.expression.*});
-    //                     },
-    //                 }
-    //             },
-    //             .abeg_statement => |_| {
-    //                 std.debug.print("Deinitializing AbegStatement\n", .{});
-    //             },
-    //             .comot_statement => |_| {
-    //                 std.debug.print("Deinitializing ComotStatement\n", .{});
-    //             },
-    //         }
-    //     }
-    //     self.statements.deinit();
-    //     std.debug.print("Finished deinitializing BlockStatement\n", .{});
-    // }
 };
 
 pub const IfExpression = struct {
@@ -235,25 +195,6 @@ pub const IfExpression = struct {
 
     pub fn deinit(_: *IfExpression, _: std.mem.Allocator) void {
         std.debug.print("Deinitializing IfExpression\n", .{});
-
-        // Do not free condition, consequence, or alternative here.
-        // They are already tracked in allocated_expressions and will be freed by the parser.
-
-        // // Free the condition expression
-        // std.debug.print("Deinitializing condition expression\n", .{});
-        // allocator.destroy(self.condition);
-        //
-        // // Free the consequence block
-        // std.debug.print("Deinitializing consequence block\n", .{});
-        // self.consequence.deinit();
-        // allocator.destroy(self.consequence);
-        //
-        // // Free the alternative block if it exists
-        // if (self.alternative) |alt| {
-        //     std.debug.print("Deinitializing alternative block\n", .{});
-        //     alt.deinit();
-        //     allocator.destroy(alt);
-        // }
 
         std.debug.print("Finished deinitializing IfExpression\n", .{});
     }
