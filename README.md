@@ -15,21 +15,21 @@ Here’s what the language should be able to handle soon:
 ```
 // Recursive FizzBuzz in Soro
 oya fizzbuzz(num, limit) {
-    if (num > limit) {
+    abi (num > limit) {
         comot; // Base case: stop recursion
     }
 
-    if (num % 3 == 0 and num % 5 == 0) {
+    abi (num % 3 == 0 and num % 5 == 0) {
         yarn("FizzBuzz");
         comot fizzbuzz(num + 1, limit); 
     }
 
-    if (num % 3 == 0) {
+    abi (num % 3 == 0) {
         yarn("Fizz");
         comot fizzbuzz(num + 1, limit);
     }
 
-    if (num % 5 == 0) {
+    abi (num % 5 == 0) {
         yarn("Buzz");
         comot fizzbuzz(num + 1, limit); 
     }
