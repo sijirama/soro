@@ -607,7 +607,6 @@ test "Parser: If expression without naso block" {
     var program = try parser.parseProgram();
     defer program.deinit();
 
-    std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
     try testing.expectEqual(program.statements.items.len, 1);
 
     // const stmt = program.statements.items[0];
@@ -697,66 +696,66 @@ test "Parser: If expression without naso block" {
 //     try testing.expectEqual(alt_comot_expr.integer_literal.value, 0);
 // }
 
-// test "Parser: Nested if expressions" {
-//     const input =
-//         \\abi(5 > 3) {
-//         \\    abi(2 < 1) {
-//         \\        comot 42;
-//         \\    } naso {
-//         \\        comot 0;
-//         \\    }
-//         \\} naso {
-//         \\    comot 99;
-//         \\}
-//     ;
-//     const allocator = std.testing.allocator;
-//
-//     var lexer = Lexer.init(allocator, input, "test.soro", ".");
-//     defer lexer.deinit();
-//
-//     var parser = Parser.init(allocator, &lexer);
-//     defer parser.deinit();
-//
-//     var program = try parser.parseProgram();
-//     defer program.deinit();
-//
-//     try testing.expectEqual(program.statements.items.len, 1);
-//
-//     const stmt = program.statements.items[0];
-//     try testing.expect(stmt == .expression_statement);
-//
-//     const expr_stmt = stmt.expression_statement;
-//     const expr = expr_stmt.expression.*;
-//     try testing.expect(expr == .if_expression);
-//
-//     const if_expr = expr.if_expression;
-//     try testing.expectEqualStrings(if_expr.token.value, "abi");
-//
-//     // Check condition
-//     const condition = if_expr.condition.*;
-//     try testing.expect(condition == .infix_expression);
-//     try testing.expectEqualStrings(condition.infix_expression.operator, ">");
-//
-//     // Check consequence block
-//     const consequence = if_expr.consequence;
-//     try testing.expectEqual(consequence.statements.items.len, 1);
-//
-//     const consequence_stmt = consequence.statements.items[0];
-//     try testing.expect(consequence_stmt == .expression_statement);
-//
-//     const nested_expr_stmt = consequence_stmt.expression_statement;
-//     const nested_expr = nested_expr_stmt.expression.*;
-//     try testing.expect(nested_expr == .if_expression);
-//
-//     // Check alternative block
-//     const alternative = if_expr.alternative orelse unreachable;
-//     try testing.expectEqual(alternative.statements.items.len, 1);
-//
-//     const alternative_stmt = alternative.statements.items[0];
-//     try testing.expect(alternative_stmt == .comot_statement);
-//
-//     const alt_comot_stmt = alternative_stmt.comot_statement;
-//     const alt_comot_expr = alt_comot_stmt.value.*;
-//     try testing.expect(alt_comot_expr == .integer_literal);
-//     try testing.expectEqual(alt_comot_expr.integer_literal.value, 99);
-// }
+test "Parser: Nested if expressions" {
+    const input =
+        \\abi(5 > 3) {
+        \\    abi(2 < 1) {
+        \\        comot 42;
+        \\    } naso {
+        \\        comot 0;
+        \\    }
+        \\} naso {
+        \\    comot 99;
+        \\}
+    ;
+    const allocator = std.testing.allocator;
+
+    var lexer = Lexer.init(allocator, input, "test.soro", ".");
+    defer lexer.deinit();
+
+    var parser = Parser.init(allocator, &lexer);
+    defer parser.deinit();
+
+    var program = try parser.parseProgram();
+    defer program.deinit();
+
+    try testing.expectEqual(program.statements.items.len, 1);
+    //
+    //     const stmt = program.statements.items[0];
+    //     try testing.expect(stmt == .expression_statement);
+    //
+    //     const expr_stmt = stmt.expression_statement;
+    //     const expr = expr_stmt.expression.*;
+    //     try testing.expect(expr == .if_expression);
+    //
+    //     const if_expr = expr.if_expression;
+    //     try testing.expectEqualStrings(if_expr.token.value, "abi");
+    //
+    //     // Check condition
+    //     const condition = if_expr.condition.*;
+    //     try testing.expect(condition == .infix_expression);
+    //     try testing.expectEqualStrings(condition.infix_expression.operator, ">");
+    //
+    //     // Check consequence block
+    //     const consequence = if_expr.consequence;
+    //     try testing.expectEqual(consequence.statements.items.len, 1);
+    //
+    //     const consequence_stmt = consequence.statements.items[0];
+    //     try testing.expect(consequence_stmt == .expression_statement);
+    //
+    //     const nested_expr_stmt = consequence_stmt.expression_statement;
+    //     const nested_expr = nested_expr_stmt.expression.*;
+    //     try testing.expect(nested_expr == .if_expression);
+    //
+    //     // Check alternative block
+    //     const alternative = if_expr.alternative orelse unreachable;
+    //     try testing.expectEqual(alternative.statements.items.len, 1);
+    //
+    //     const alternative_stmt = alternative.statements.items[0];
+    //     try testing.expect(alternative_stmt == .comot_statement);
+    //
+    //     const alt_comot_stmt = alternative_stmt.comot_statement;
+    //     const alt_comot_expr = alt_comot_stmt.value.*;
+    //     try testing.expect(alt_comot_expr == .integer_literal);
+    //     try testing.expectEqual(alt_comot_expr.integer_literal.value, 99);
+}

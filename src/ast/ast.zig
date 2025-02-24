@@ -168,36 +168,59 @@ pub const ExpressionStatement = struct {
 };
 
 pub const BlockStatement = struct {
-    token: Token, // the { token
+    token: Token,
     statements: std.ArrayList(Statement),
-    allocator: std.mem.Allocator,
+    //allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) BlockStatement {
-        return BlockStatement{
-            .token = undefined,
+    pub fn init(allocator: std.mem.Allocator, token: Token) BlockStatement {
+        return .{
+            .token = token,
             .statements = std.ArrayList(Statement).init(allocator),
-            .allocator = allocator,
+            //.allocator = allocator,
         };
-    }
-
-    pub fn deinit(self: *BlockStatement) void {
-        std.debug.print("Deinitializing block statement\n", .{});
-        for (self.statements.items) |stmt| {
-            switch (stmt) {
-                .block_statement => |blk_stmt| {
-                    const blk = @constCast(&blk_stmt);
-                    blk.deinit();
-                },
-                else => {},
-            }
-        }
-        self.statements.deinit();
-        std.debug.print("Deinitialized block statement\n", .{});
     }
 
     pub fn tokenLiteral(self: BlockStatement) []const u8 {
         return self.token.value;
     }
+
+    // pub fn deinit(self: *BlockStatement) void {
+    //     std.debug.print("Deinitializing BlockStatement with {} statements\n", .{self.statements.items.len});
+    //
+    //     // First deinit any nested statements
+    //     for (self.statements.items) |*stmt| {
+    //         switch (stmt.*) {
+    //             .block_statement => |*block| {
+    //                 std.debug.print("Deinitializing nested BlockStatement\n", .{});
+    //                 block.deinit();
+    //             },
+    //             .expression_statement => |expr| {
+    //                 std.debug.print("Deinitializing ExpressionStatement\n", .{});
+    //                 // Handle expression cleanup if needed
+    //                 switch (expr.expression.*) {
+    //                     .if_expression => |*if_expr| {
+    //                         std.debug.print("Deinitializing IfExpression inside ExpressionStatement\n", .{});
+    //                         if_expr.consequence.deinit();
+    //                         if (if_expr.alternative) |alternative| {
+    //                             alternative.deinit();
+    //                         }
+    //                     },
+    //                     else => {
+    //                         std.debug.print("Skipping expression cleanup for type: {}\n", .{expr.expression.*});
+    //                     },
+    //                 }
+    //             },
+    //             .abeg_statement => |_| {
+    //                 std.debug.print("Deinitializing AbegStatement\n", .{});
+    //             },
+    //             .comot_statement => |_| {
+    //                 std.debug.print("Deinitializing ComotStatement\n", .{});
+    //             },
+    //         }
+    //     }
+    //     self.statements.deinit();
+    //     std.debug.print("Finished deinitializing BlockStatement\n", .{});
+    // }
 };
 
 pub const IfExpression = struct {
@@ -210,18 +233,28 @@ pub const IfExpression = struct {
         return self.token.value;
     }
 
-    pub fn deinit(self: *IfExpression, allocator: std.mem.Allocator) void {
-        // Free the condition expression
-        allocator.destroy(self.condition);
+    pub fn deinit(_: *IfExpression, _: std.mem.Allocator) void {
+        std.debug.print("Deinitializing IfExpression\n", .{});
 
-        // Free the consequence block
-        self.consequence.deinit();
-        allocator.destroy(self.consequence);
+        // Do not free condition, consequence, or alternative here.
+        // They are already tracked in allocated_expressions and will be freed by the parser.
 
-        // Free the alternative block if it exists
-        if (self.alternative) |alt| {
-            alt.deinit();
-            allocator.destroy(alt);
-        }
+        // // Free the condition expression
+        // std.debug.print("Deinitializing condition expression\n", .{});
+        // allocator.destroy(self.condition);
+        //
+        // // Free the consequence block
+        // std.debug.print("Deinitializing consequence block\n", .{});
+        // self.consequence.deinit();
+        // allocator.destroy(self.consequence);
+        //
+        // // Free the alternative block if it exists
+        // if (self.alternative) |alt| {
+        //     std.debug.print("Deinitializing alternative block\n", .{});
+        //     alt.deinit();
+        //     allocator.destroy(alt);
+        // }
+
+        std.debug.print("Finished deinitializing IfExpression\n", .{});
     }
 };
