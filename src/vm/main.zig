@@ -219,6 +219,13 @@ pub const VM = struct {
         try self.push(nativeBoolToBooleanObject(result));
     }
 
+    fn isTruthy(_: *VM, obj: object.Object) bool {
+        return switch (obj) {
+            .Boolean => obj.Boolean.value,
+            else => true,
+        };
+    }
+
     pub fn run(self: *VM) !void {
         //std.debug.print("Bytecode: {any}\n", .{self.instructions});
 
@@ -255,6 +262,20 @@ pub const VM = struct {
                 .OpLessThan => try self.executeComparisonOperation(op),
                 .OpBang => try self.executeBangOperation(),
                 .OpMinus => try self.executeMinusOperation(),
+                .OpJump => {
+                    const pos = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
+                    ip = pos - 1;
+                },
+
+                .OpJumpNotTruthy => {
+                    const pos = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
+                    ip += 2;
+
+                    const condition = self.pop() orelse return error.StackUnderflow;
+                    if (!self.isTruthy(condition)) {
+                        ip = pos - 1;
+                    }
+                },
             }
         }
     }
