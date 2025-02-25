@@ -482,7 +482,7 @@ test "Compiler: Conditionals" {
             },
             .expected_instructions = &[_][]const u8{
                 try make(allocator, .OpTrue, &[_]u32{}),
-                try make(allocator, .OpJumpNotTruthy, &[_]u32{7}),
+                try make(allocator, .OpJumpNotTruthy, &[_]u32{10}),
                 try make(allocator, .OpConstant, &[_]u32{0}),
                 try make(allocator, .OpJump, &[_]u32{11}),
                 try make(allocator, .OpNull, &[_]u32{}),

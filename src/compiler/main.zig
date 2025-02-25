@@ -269,26 +269,24 @@ pub const Compiler = struct {
 
                         var afterConsequencePos: ?usize = null;
 
+                        const jumpPos = try self.emit(.OpJump, &[_]u32{999});
+                        afterConsequencePos = self.instructions.items.len;
+                        self.changeOperand(jumNotTruthyPos, afterConsequencePos.?);
+
                         if (expr.alternative == null) {
-                            afterConsequencePos = self.instructions.items.len;
-                            self.changeOperand(jumNotTruthyPos, afterConsequencePos.?);
+                            _ = try self.emit(.OpNull, &[_]u32{});
                         } else {
                             const alternative = expr.alternative.?.*;
-                            const jumpPos = try self.emit(.OpJump, &[_]u32{999});
-
-                            afterConsequencePos = self.instructions.items.len;
-                            self.changeOperand(jumNotTruthyPos, afterConsequencePos.?);
-
                             const altStatement = ast.Statement{ .block_statement = alternative };
                             try self.compile(altStatement);
 
                             if (self.lastInstructionIsPop()) {
                                 self.removeLastPop();
                             }
-
-                            const afterAlternativePos = self.instructions.items.len;
-                            self.changeOperand(jumpPos, afterAlternativePos);
                         }
+
+                        const afterAlternativePos = self.instructions.items.len;
+                        self.changeOperand(jumpPos, afterAlternativePos);
                     },
 
                     else => {

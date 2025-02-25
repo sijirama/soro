@@ -168,7 +168,7 @@ pub const Lexer = struct {
                 }
             },
 
-            '"' => return self.readString(),
+            '"', '\'' => return self.readString(),
 
             '0'...'9' => return self.readNumber(),
 
@@ -266,7 +266,7 @@ pub const Lexer = struct {
         while (self.position < self.input.len) {
             const ch = self.input[self.position];
 
-            if (ch == '"') {
+            if (ch == '"' or ch == '\'') {
                 self.advancePosition(1); // Skip closing quote
                 const tokenValue = try string.toOwnedSlice();
                 try self.stringAllocations.append(tokenValue);

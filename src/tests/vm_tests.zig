@@ -308,13 +308,18 @@ test "Conditionals" {
     const test_cases = [_]VmTestCase{
         // Basic literals
         .{ .input = "abi (true) {10}", .expected = .{ .int = 10 } },
-        .{ .input = "abi (fasle) {10}", .expected = .null },
+        .{ .input = "abi ((abi (false) { 10 })) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
+        .{ .input = "abi (false) {10}", .expected = .null },
+        .{ .input = "abi (0) {10}", .expected = .null },
+        .{ .input = "abi (5) {10}", .expected = .{ .int = 10 } },
         .{ .input = "abi (1 > 2) {10}", .expected = .null },
+        .{ .input = "!(abi (false) { 5; })", .expected = .{ .bool = true } },
         .{ .input = "abi (true) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
         .{ .input = "abi (false) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
         .{ .input = "abi (1) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
         .{ .input = "abi (1 < 2) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
         .{ .input = "abi (1 > 2) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
+        //.{ .input = "abi( \'siji\' ){40}naso{30}", .expected = .{ .int = 40 } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);

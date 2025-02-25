@@ -6,7 +6,7 @@ const compiler = @import("../compiler/main.zig");
 const StackSize = 2048;
 const True = object.Object{ .Boolean = .{ .value = true } };
 const False = object.Object{ .Boolean = .{ .value = false } };
-const Null = object.Object{ .Null = .{} };
+const Null = object.Object{ .Null = {} };
 
 pub const VM = struct {
     constants: []object.Object,
@@ -64,6 +64,9 @@ pub const VM = struct {
                         try self.push(True);
                     },
                 }
+            },
+            .Null => {
+                try self.push(True);
             },
             else => {
                 try self.push(False);
@@ -223,6 +226,10 @@ pub const VM = struct {
     fn isTruthy(_: *VM, obj: object.Object) bool {
         return switch (obj) {
             .Boolean => obj.Boolean.value,
+            .Null => false,
+            .Integer => obj.Integer.value > 0,
+            .Float => obj.Float.value > 0,
+            .String => obj.String.value.len > 0,
             else => true,
         };
     }
@@ -265,8 +272,7 @@ pub const VM = struct {
                 .OpMinus => try self.executeMinusOperation(),
                 .OpJump => {
                     const pos = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
-                    //ip = pos - 1;
-                    ip += 2; // ISSUE: You forgot to advance the instruction pointer here
+                    ip += 2;
                     ip = pos;
                 },
 
@@ -276,9 +282,11 @@ pub const VM = struct {
 
                     const condition = self.pop() orelse return error.StackUnderflow;
                     if (!self.isTruthy(condition)) {
-                        //ip = pos - 1;
                         ip = pos;
                     }
+                },
+                .OpNull => {
+                    try self.push(Null);
                 },
             }
         }
