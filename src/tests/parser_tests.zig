@@ -514,8 +514,8 @@ test "Parser: Multiple AbegStatements with variety" {
     try testing.expectEqual(abeg_stmt3.is_inferred, false);
 
     const expr3 = abeg_stmt3.value.*;
-    try testing.expect(expr3 == .float_literal); // Assuming float_literal exists
-    //try testing.expectEqual(expr3.float_literal.value, 3.14);
+    try testing.expect(expr3 == .float_literal);
+    try testing.expectEqual(expr3.float_literal.value, 3.14);
 
     // Test fourth statement: abeg lock is_valid := true;
     const stmt4 = program.statements.items[3];
@@ -523,7 +523,7 @@ test "Parser: Multiple AbegStatements with variety" {
 
     const abeg_stmt4 = stmt4.abeg_statement;
     try testing.expectEqualStrings(abeg_stmt4.name.value, "is_valid");
-    try testing.expectEqual(abeg_stmt4.type_annotation, null); // Inferred type
+    try testing.expectEqual(abeg_stmt4.type_annotation, null);
     try testing.expectEqual(abeg_stmt4.is_locked, true);
     try testing.expectEqual(abeg_stmt4.is_inferred, true);
 

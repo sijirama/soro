@@ -468,6 +468,45 @@ test "Compiler: boolean expressions" {
     try runCompilerTests(allocator, &test_cases);
 }
 
+test "Compiler: Conditionals" {
+    const allocator = testing.allocator;
+
+    const make = code.MakeInstruction;
+
+    const test_cases = [_]CompilerTestCase{
+        .{
+            .input = "abi ( true ){10}; 333",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 10 },
+                .{ .integer = 333 },
+            },
+            .expected_instructions = &[_][]const u8{
+                // 000
+                try make(allocator, .OpTrue, &[_]u32{}),
+                // 001
+                try make(allocator, .OpJumpNotTruthy, &[_]u32{7}),
+                // 004
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                // 007
+                try make(allocator, .OpPop, &[_]u32{}),
+                // 008
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                // 011
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+    };
+
+    // Free the test case instructions
+    defer for (test_cases) |test_case| {
+        for (test_case.expected_instructions) |instruction| {
+            allocator.free(instruction);
+        }
+    };
+
+    try runCompilerTests(allocator, &test_cases);
+}
+
 // Add this to your test file:
 test "Compiler: instructions to string" {
     const allocator = std.testing.allocator;

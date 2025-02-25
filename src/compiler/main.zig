@@ -2,6 +2,13 @@ const std = @import("std");
 const code = @import("../code/main.zig");
 const ast = @import("../ast/ast.zig");
 const object = @import("../object/main.zig");
+//const CompilerError = @import("./error.zig").CompilerErrorType;
+
+pub const CompilerErrorType = error{
+    UnsupportedExpression,
+    UnknownNodeType,
+    MakeInstructionsFailed,
+};
 
 pub const Bytecode = struct {
     Instructions: []code.byte,
@@ -18,16 +25,26 @@ pub const Bytecode = struct {
     }
 };
 
+const EmittedInstruction = struct {
+    OpCode: ?code.Opcode = null,
+    Position: ?usize = null,
+};
+
 pub const Compiler = struct {
     instructions: std.ArrayList(code.byte), // array of instructions
     constantPool: std.ArrayList(object.Object), // array of constants
     allocator: std.mem.Allocator,
+
+    lastInstruction: EmittedInstruction,
+    previousInstruction: EmittedInstruction,
 
     pub fn init(allocator: std.mem.Allocator) Compiler {
         const compiler = Compiler{
             .allocator = allocator,
             .constantPool = std.ArrayList(object.Object).init(allocator),
             .instructions = std.ArrayList(code.byte).init(allocator),
+            .lastInstruction = EmittedInstruction{},
+            .previousInstruction = EmittedInstruction{},
         };
         return compiler;
     }
@@ -58,22 +75,72 @@ pub const Compiler = struct {
     }
 
     /// addConstant: Adds a constant to the pool and returns its index
-    fn addConstant(self: *Compiler, obj: object.Object) !usize {
-        try self.constantPool.append(obj);
+    fn addConstant(self: *Compiler, obj: object.Object) CompilerErrorType!usize {
+        self.constantPool.append(obj) catch unreachable;
         return self.constantPool.items.len - 1;
     }
 
+    fn setLastInstruction(self: *Compiler, op: code.Opcode, pos: usize) void {
+        const prev = self.lastInstruction;
+        const last = EmittedInstruction{
+            .OpCode = op,
+            .Position = pos,
+        };
+
+        self.previousInstruction = prev;
+        self.lastInstruction = last;
+    }
+
+    fn lastInstructionIsPop(self: *Compiler) bool {
+        return self.lastInstruction.OpCode == code.Opcode.OpPop;
+    }
+
+    fn replaceInstruction(self: *Compiler, pos: usize, newInstruction: []const code.byte) void {
+        // Ensure the new instructions fit within the existing instructions array
+        if (pos + newInstruction.len > self.instructions.items.len) {
+            @panic("New instructions exceed the bounds of the existing instructions array");
+        }
+
+        for (newInstruction, 0..) |byte, i| {
+            self.instructions.items[pos + i] = byte;
+        }
+    }
+
+    pub fn changeOperand(self: *Compiler, opPos: usize, operand: usize) void {
+        const op: code.Opcode = @enumFromInt(self.instructions.items[opPos]);
+
+        const ope: u32 = @intCast(operand);
+
+        const newInstruction = code.MakeInstruction(self.allocator, op, &[_]u32{ope}) catch unreachable;
+        defer self.allocator.free(newInstruction); // Free the temporary instruction
+
+        self.replaceInstruction(opPos, newInstruction);
+    }
+
+    fn removeLastPop(self: *Compiler) void {
+        if (self.instructions.items.len == 0) return;
+
+        if (self.lastInstruction.Position) |pos| {
+            self.instructions.shrinkRetainingCapacity(pos);
+        }
+
+        self.lastInstruction = self.previousInstruction;
+    }
+
     /// emit: Creates and emits an instruction, returning its position
-    fn emit(self: *Compiler, op: code.Opcode, operands: []const u32) !usize {
-        const instruction = try code.MakeInstruction(self.allocator, op, operands);
+    fn emit(self: *Compiler, op: code.Opcode, operands: []const u32) CompilerErrorType!usize {
+        const instruction = code.MakeInstruction(self.allocator, op, operands) catch unreachable;
         defer self.allocator.free(instruction); // Free the temporary instruction
 
         const pos = self.instructions.items.len;
-        try self.instructions.appendSlice(instruction);
+        self.instructions.appendSlice(instruction) catch unreachable;
+
+        self.setLastInstruction(op, pos);
+
         return pos;
     }
 
-    pub fn compile(self: *Compiler, node: anytype) !void {
+    pub fn compile(self: *Compiler, node: anytype) CompilerErrorType!void {
         switch (@TypeOf(node)) {
             ast.Program => {
                 for (node.statements.items) |stmt| {
@@ -183,14 +250,34 @@ pub const Compiler = struct {
                             _ = try self.emit(.OpBang, &[_]u32{});
                         }
                     },
+                    .if_expression => |expr| {
+                        const condition = expr.condition.*;
+                        try self.compile(condition);
+
+                        // Emit an `OpJumpNotTruthy` with a bogus value
+                        const jumNotTruthyPos = try self.emit(.OpJumpNotTruthy, &[_]u32{999});
+
+                        // compile the consequence
+                        const consequence = expr.consequence.*;
+                        const statement = ast.Statement{ .block_statement = consequence };
+                        try self.compile(statement);
+
+                        // remove that nasty OpPop
+                        if (self.lastInstructionIsPop()) {
+                            self.removeLastPop();
+                        }
+
+                        const afterConsequencePos = self.instructions.items.len;
+                        self.changeOperand(jumNotTruthyPos, afterConsequencePos);
+                    },
+
                     else => {
-                        // Handle other expression types as needed
-                        return error.UnsupportedExpression;
+                        return CompilerErrorType.UnsupportedExpression;
                     },
                 }
             },
             else => {
-                return error.UnknownNodeType;
+                return CompilerErrorType.UnknownNodeType;
             },
         }
     }
