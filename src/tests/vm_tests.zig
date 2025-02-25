@@ -302,13 +302,12 @@ test "Interger Prefix Operations" {
 test "Conditionals" {
     const test_cases = [_]VmTestCase{
         // Basic literals
-        //.{ .input = "abi (true) {10}", .expected = .{ .int = 10 } },
-        //.{ .input = "abi (2 > 1) {10}", .expected = .{ .int = 10 } },
+        .{ .input = "abi (true) {10}", .expected = .{ .int = 10 } },
         .{ .input = "abi (true) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
-        // .{ .input = "abi (false) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
-        // .{ .input = "abi (1) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
-        // .{ .input = "abi (1 < 2) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
-        // .{ .input = "abi (1 > 2) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
+        .{ .input = "abi (false) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
+        .{ .input = "abi (1) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
+        .{ .input = "abi (1 < 2) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
+        .{ .input = "abi (1 > 2) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
     };
 
     try runVmTests(std.testing.allocator, &test_cases);

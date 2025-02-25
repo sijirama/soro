@@ -264,7 +264,9 @@ pub const VM = struct {
                 .OpMinus => try self.executeMinusOperation(),
                 .OpJump => {
                     const pos = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
-                    ip = pos - 1;
+                    //ip = pos - 1;
+                    ip += 2; // ISSUE: You forgot to advance the instruction pointer here
+                    ip = pos;
                 },
 
                 .OpJumpNotTruthy => {
@@ -273,7 +275,8 @@ pub const VM = struct {
 
                     const condition = self.pop() orelse return error.StackUnderflow;
                     if (!self.isTruthy(condition)) {
-                        ip = pos - 1;
+                        //ip = pos - 1;
+                        ip = pos;
                     }
                 },
             }
