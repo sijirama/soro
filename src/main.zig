@@ -41,14 +41,6 @@ pub fn replStart() !void {
             var program = try parser.parseProgram();
             defer program.deinit();
 
-            // if (parser.errors.items.len == 0) {
-            //     std.debug.print("\nREPL: Total of {d} statements\n", .{program.statements.items.len});
-            //     if (program.statements.items.len > 0) {
-            //         std.debug.print("\nREPL: {}\n", .{program.statements.items[0]});
-            //     }
-            //     std.debug.print("\n", .{});
-            // }
-
             var comp = compiler.Compiler.init(allocator);
             defer comp.deinit();
 
@@ -94,23 +86,30 @@ pub fn processInputSourceFile(file_path: []const u8) !void {
     var lexer = Lexer.init(allocator, buffer, file_name, dir_path);
     defer lexer.deinit();
 
-    const tokens = try lexer.tokenize();
-    defer allocator.free(tokens);
-
-    const output = try LexerUtils.tokensToString(allocator, tokens);
-    defer allocator.free(output);
-
     var parser = Parser.init(allocator, &lexer);
     defer parser.deinit();
-
-    if (parser.errors.items.len > 0) {
-        parser.printErrors();
-    }
 
     var program = try parser.parseProgram();
     defer program.deinit();
 
-    std.debug.print("\n{s}\n", .{output});
+    var comp = compiler.Compiler.init(allocator);
+    defer comp.deinit();
+
+    try comp.compile(program);
+    const bytecode = try comp.bytecode();
+
+    defer {
+        bytecode.deinit();
+        allocator.destroy(bytecode);
+    }
+
+    var vm = VM.init(allocator, bytecode);
+    defer vm.deinit(allocator);
+
+    try vm.run();
+    const stackElem = vm.LastPoppedStackElem() orelse return error.StackEmpty;
+
+    PrintObject(stackElem);
 }
 
 pub fn getComputerName(allocator: std.mem.Allocator) ![]const u8 {
