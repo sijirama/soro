@@ -42,6 +42,8 @@ pub const Opcode = enum(OpcodeType) {
     // jump
     OpJumpNotTruthy,
     OpJump,
+
+    OpNull,
 };
 
 /// Defines the metadata for an opcode, such as its name and operand widths.
@@ -83,6 +85,8 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
     // 1 operand, 2 bytes wide
     .OpJumpNotTruthy = .{ .Name = "OpJumpNotTruthy", .OperandWidths = &[_]u8{2} },
     .OpJump = .{ .Name = "OpJump", .OperandWidths = &[_]u8{2} },
+
+    .OpNull = .{ .Name = "OpNull", .OperandWidths = &[_]u8{} },
 });
 
 /// Looks up the definition of an opcode by its numeric value.

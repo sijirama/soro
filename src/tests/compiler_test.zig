@@ -481,17 +481,13 @@ test "Compiler: Conditionals" {
                 .{ .integer = 333 },
             },
             .expected_instructions = &[_][]const u8{
-                // 000
                 try make(allocator, .OpTrue, &[_]u32{}),
-                // 001
                 try make(allocator, .OpJumpNotTruthy, &[_]u32{7}),
-                // 004
                 try make(allocator, .OpConstant, &[_]u32{0}),
-                // 007
+                try make(allocator, .OpJump, &[_]u32{11}),
+                try make(allocator, .OpNull, &[_]u32{}),
                 try make(allocator, .OpPop, &[_]u32{}),
-                // 008
                 try make(allocator, .OpConstant, &[_]u32{1}),
-                // 011
                 try make(allocator, .OpPop, &[_]u32{}),
             },
         },

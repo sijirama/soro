@@ -6,6 +6,7 @@ const compiler = @import("../compiler/main.zig");
 const StackSize = 2048;
 const True = object.Object{ .Boolean = .{ .value = true } };
 const False = object.Object{ .Boolean = .{ .value = false } };
+const Null = object.Object{ .Null = .{} };
 
 pub const VM = struct {
     constants: []object.Object,

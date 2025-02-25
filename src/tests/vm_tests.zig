@@ -16,6 +16,7 @@ const VmTestCase = struct {
         float: f64,
         bool: bool,
         string: []const u8,
+        null: void,
     },
 };
 
@@ -36,6 +37,10 @@ fn testExpectedObject(expected: anytype, actual: object.Object) !void {
         .string => |value| {
             const actualString = actual.String;
             try testing.expectEqualStrings(value, actualString.value);
+        },
+        .null => |value| {
+            const actualNull = actual.Null;
+            try testing.expectEqual(value, actualNull);
         },
     }
 }
@@ -303,6 +308,8 @@ test "Conditionals" {
     const test_cases = [_]VmTestCase{
         // Basic literals
         .{ .input = "abi (true) {10}", .expected = .{ .int = 10 } },
+        .{ .input = "abi (fasle) {10}", .expected = .null },
+        .{ .input = "abi (1 > 2) {10}", .expected = .null },
         .{ .input = "abi (true) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
         .{ .input = "abi (false) { 10 } naso { 20 }", .expected = .{ .int = 20 } },
         .{ .input = "abi (1) { 10 } naso { 20 }", .expected = .{ .int = 10 } },
