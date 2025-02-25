@@ -495,6 +495,33 @@ test "Compiler: Conditionals" {
                 try make(allocator, .OpPop, &[_]u32{}),
             },
         },
+        .{
+            .input = "abi ( true ){10} naso {20}; 333",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 10 },
+                .{ .integer = 20 },
+                .{ .integer = 333 },
+            },
+            .expected_instructions = &[_][]const u8{
+                // 000
+                try make(allocator, .OpTrue, &[_]u32{}),
+                // 001
+                try make(allocator, .OpJumpNotTruthy, &[_]u32{10}),
+                // 004
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                // 007
+                try make(allocator, .OpJump, &[_]u32{13}),
+                //010
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                //013
+                try make(allocator, .OpPop, &[_]u32{}),
+                // 014
+                try make(allocator, .OpConstant, &[_]u32{2}),
+                // 017
+                try make(allocator, .OpPop, &[_]u32{}),
+                // 012
+            },
+        },
     };
 
     // Free the test case instructions
