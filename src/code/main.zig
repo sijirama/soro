@@ -44,6 +44,10 @@ pub const Opcode = enum(OpcodeType) {
     OpJump,
 
     OpNull,
+
+    // bindings bitch
+    OpGetGlobal,
+    OpSetGlobal,
 };
 
 /// Defines the metadata for an opcode, such as its name and operand widths.
@@ -87,6 +91,10 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
     .OpJump = .{ .Name = "OpJump", .OperandWidths = &[_]u8{2} },
 
     .OpNull = .{ .Name = "OpNull", .OperandWidths = &[_]u8{} },
+
+    // bindings biatchhhhhhh
+    .OpGetGlobal = .{ .Name = "OpGetGlobal", .OperandWidths = &[_]u8{2} },
+    .OpSetGlobal = .{ .Name = "OpSetGlobal", .OperandWidths = &[_]u8{2} },
 });
 
 /// Looks up the definition of an opcode by its numeric value.

@@ -155,6 +155,41 @@ fn testConstants(
     }
 }
 
+// Add this to your test file:
+test "Compiler: instructions to string" {
+    const allocator = std.testing.allocator;
+
+    // Create test instructions
+    const ins1 = try code.MakeInstruction(allocator, .OpAdd, &[_]u32{});
+    defer allocator.free(ins1);
+    const ins2 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{2});
+    defer allocator.free(ins2);
+    const ins3 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{65535});
+    defer allocator.free(ins3);
+
+    // Concatenate instructions
+    const total_len = ins1.len + ins2.len + ins3.len;
+    var concatted = try allocator.alloc(u8, total_len);
+    defer allocator.free(concatted);
+
+    @memcpy(concatted[0..ins1.len], ins1);
+    @memcpy(concatted[ins1.len..][0..ins2.len], ins2);
+    @memcpy(concatted[ins1.len + ins2.len ..][0..ins3.len], ins3);
+
+    // Generate string representation
+    const result = try code.instructionsToString(concatted, allocator);
+    defer allocator.free(result);
+
+    const expected =
+        \\0000 OpAdd
+        \\0001 OpConstant 2
+        \\0004 OpConstant 65535
+        \\
+    ;
+
+    try std.testing.expectEqualStrings(expected, result);
+}
+
 fn runCompilerTests(allocator: std.mem.Allocator, test_cases: []const CompilerTestCase) !void {
     for (test_cases) |test_case| {
 
@@ -530,37 +565,69 @@ test "Compiler: Conditionals" {
     try runCompilerTests(allocator, &test_cases);
 }
 
-// Add this to your test file:
-test "Compiler: instructions to string" {
-    const allocator = std.testing.allocator;
+test "Compiler: Abeg Statements" {
+    const allocator = testing.allocator;
 
-    // Create test instructions
-    const ins1 = try code.MakeInstruction(allocator, .OpAdd, &[_]u32{});
-    defer allocator.free(ins1);
-    const ins2 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{2});
-    defer allocator.free(ins2);
-    const ins3 = try code.MakeInstruction(allocator, .OpConstant, &[_]u32{65535});
-    defer allocator.free(ins3);
+    const make = code.MakeInstruction;
 
-    // Concatenate instructions
-    const total_len = ins1.len + ins2.len + ins3.len;
-    var concatted = try allocator.alloc(u8, total_len);
-    defer allocator.free(concatted);
+    const test_cases = [_]CompilerTestCase{
+        .{
+            .input =
+            \\abeg one = 1;
+            \\abeg two = 2;
+            ,
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpSetGlobal, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpSetGlobal, &[_]u32{1}),
+            },
+        },
+        .{
+            .input =
+            \\abeg one = 1;
+            \\one;
+            ,
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpSetGlobal, &[_]u32{0}),
+                try make(allocator, .OpGetGlobal, &[_]u32{0}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input =
+            \\abeg one = 1;
+            \\abeg two = one;
+            \\two;
+            ,
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpSetGlobal, &[_]u32{0}),
+                try make(allocator, .OpGetGlobal, &[_]u32{0}),
+                try make(allocator, .OpSetGlobal, &[_]u32{1}),
+                try make(allocator, .OpGetGlobal, &[_]u32{1}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+    };
 
-    @memcpy(concatted[0..ins1.len], ins1);
-    @memcpy(concatted[ins1.len..][0..ins2.len], ins2);
-    @memcpy(concatted[ins1.len + ins2.len ..][0..ins3.len], ins3);
+    // Free the test case instructions
+    defer for (test_cases) |test_case| {
+        for (test_case.expected_instructions) |instruction| {
+            allocator.free(instruction);
+        }
+    };
 
-    // Generate string representation
-    const result = try code.instructionsToString(concatted, allocator);
-    defer allocator.free(result);
-
-    const expected =
-        \\0000 OpAdd
-        \\0001 OpConstant 2
-        \\0004 OpConstant 65535
-        \\
-    ;
-
-    try std.testing.expectEqualStrings(expected, result);
+    try runCompilerTests(allocator, &test_cases);
 }
