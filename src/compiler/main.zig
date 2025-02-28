@@ -43,6 +43,8 @@ pub const Compiler = struct {
 
     symbolTable: symbol.SymbolTable,
 
+    owns_constants: bool,
+
     pub fn init(allocator: std.mem.Allocator) Compiler {
         const compiler = Compiler{
             .allocator = allocator,
@@ -51,14 +53,42 @@ pub const Compiler = struct {
             .lastInstruction = EmittedInstruction{},
             .previousInstruction = EmittedInstruction{},
             .symbolTable = symbol.SymbolTable.init(allocator),
+            .owns_constants = true,
         };
         return compiler;
     }
 
-    pub fn deinit(self: *Compiler) void {
+    pub fn deinitOld(self: *Compiler) void {
         self.instructions.deinit();
         self.constantPool.deinit();
         self.symbolTable.deinit();
+    }
+
+    pub fn deinit(self: *Compiler) void {
+        self.instructions.deinit();
+
+        // Only deinit these if we own them (not in initWithState case)
+        if (self.owns_constants) {
+            self.constantPool.deinit();
+            self.symbolTable.deinit();
+        }
+    }
+
+    // New initialization method that preserves state
+    pub fn initWithState(
+        allocator: std.mem.Allocator,
+        symbolTable: symbol.SymbolTable,
+        constants: std.ArrayList(object.Object),
+    ) Compiler {
+        return Compiler{
+            .allocator = allocator,
+            .constantPool = constants,
+            .instructions = std.ArrayList(code.byte).init(allocator),
+            .lastInstruction = EmittedInstruction{},
+            .previousInstruction = EmittedInstruction{},
+            .symbolTable = symbolTable,
+            .owns_constants = false,
+        };
     }
 
     pub fn bytecode(self: *Compiler) !*Bytecode {

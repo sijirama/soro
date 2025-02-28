@@ -324,3 +324,13 @@ test "Conditionals" {
 
     try runVmTests(std.testing.allocator, &test_cases);
 }
+
+test "Gloabal Let Statements" {
+    const test_cases = [_]VmTestCase{
+        .{ .input = "abeg one = 1; one", .expected = .{ .int = 1 } },
+        .{ .input = "abeg one = 1 ; abeg two = 2; one + two", .expected = .{ .int = 3 } },
+        .{ .input = "abeg one = 1; abeg two = one + one ; one + two", .expected = .{ .int = 3 } },
+    };
+
+    try runVmTests(std.testing.allocator, &test_cases);
+}

@@ -7,6 +7,7 @@ const StackSize = 2048;
 const True = object.Object{ .Boolean = .{ .value = true } };
 const False = object.Object{ .Boolean = .{ .value = false } };
 const Null = object.Object{ .Null = {} };
+const GlobalsSize = 65536;
 
 pub const VM = struct {
     constants: []object.Object,
@@ -14,6 +15,8 @@ pub const VM = struct {
     stack: []object.Object,
     sp: usize, // Stack pointer (points to the next free slot)
     allocator: std.mem.Allocator, // Add this line
+    globals: std.ArrayList(object.Object),
+    owns_globals: bool,
 
     pub fn init(allocator: std.mem.Allocator, bytecode: *compiler.Bytecode) VM {
         return .{
@@ -22,10 +25,38 @@ pub const VM = struct {
             .stack = allocator.alloc(object.Object, StackSize) catch unreachable,
             .sp = 0,
             .allocator = allocator, // Add this line
+            .globals = std.ArrayList(object.Object).init(allocator),
+            .owns_globals = true,
         };
     }
 
+    // New method that reuses existing globals
+    pub fn initWithGlobals(
+        allocator: std.mem.Allocator,
+        bytecode: *compiler.Bytecode,
+        globals: std.ArrayList(object.Object),
+    ) VM {
+        return .{
+            .constants = bytecode.Constants,
+            .instructions = bytecode.Instructions,
+            .stack = allocator.alloc(object.Object, StackSize) catch unreachable,
+            .sp = 0,
+            .allocator = allocator,
+            .globals = globals,
+            .owns_globals = false,
+        };
+    }
+
+    pub fn deinitOld(self: *VM, allocator: std.mem.Allocator) void {
+        self.globals.deinit();
+        allocator.free(self.stack);
+    }
+
     pub fn deinit(self: *VM, allocator: std.mem.Allocator) void {
+        // Only deinit globals if we own them (not in initWithGlobals case)
+        if (self.owns_globals) {
+            self.globals.deinit();
+        }
         allocator.free(self.stack);
     }
 
@@ -287,6 +318,18 @@ pub const VM = struct {
                 },
                 .OpNull => {
                     try self.push(Null);
+                },
+                .OpSetGlobal => {
+                    const globalIndex = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
+                    ip += 2;
+
+                    const obj = self.pop() orelse return error.StackEmpty;
+                    try self.globals.insert(globalIndex, obj);
+                },
+                .OpGetGlobal => {
+                    const globalIndex = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
+                    ip += 2;
+                    try self.push(self.globals.items[globalIndex]);
                 },
             }
         }
