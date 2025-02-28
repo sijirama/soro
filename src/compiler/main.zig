@@ -2,12 +2,15 @@ const std = @import("std");
 const code = @import("../code/main.zig");
 const ast = @import("../ast/ast.zig");
 const object = @import("../object/main.zig");
+const symbol = @import("./symbol_table.zig");
 //const CompilerError = @import("./error.zig").CompilerErrorType;
 
 pub const CompilerErrorType = error{
     UnsupportedExpression,
     UnknownNodeType,
     MakeInstructionsFailed,
+    SymbolTableDefinition,
+    SymbolTableLookUp,
 };
 
 pub const Bytecode = struct {
@@ -38,6 +41,8 @@ pub const Compiler = struct {
     lastInstruction: EmittedInstruction,
     previousInstruction: EmittedInstruction,
 
+    symbolTable: symbol.SymbolTable,
+
     pub fn init(allocator: std.mem.Allocator) Compiler {
         const compiler = Compiler{
             .allocator = allocator,
@@ -45,6 +50,7 @@ pub const Compiler = struct {
             .instructions = std.ArrayList(code.byte).init(allocator),
             .lastInstruction = EmittedInstruction{},
             .previousInstruction = EmittedInstruction{},
+            .symbolTable = symbol.SymbolTable.init(allocator),
         };
         return compiler;
     }
@@ -52,6 +58,7 @@ pub const Compiler = struct {
     pub fn deinit(self: *Compiler) void {
         self.instructions.deinit();
         self.constantPool.deinit();
+        self.symbolTable.deinit();
     }
 
     pub fn bytecode(self: *Compiler) !*Bytecode {
@@ -155,8 +162,13 @@ pub const Compiler = struct {
                         _ = try self.emit(.OpPop, &[_]u32{});
                     },
                     .abeg_statement => |stmt| {
+                        // TODO: constant declarations should watch out
                         const value = stmt.value.*;
                         try self.compile(value);
+                        const symb = self.symbolTable.define(stmt.name.value, symbol.GLOBAL_SCOPE) catch {
+                            return CompilerErrorType.SymbolTableDefinition;
+                        };
+                        _ = try self.emit(code.Opcode.OpSetGlobal, &[_]u32{@intCast(symb.Index)});
                     },
                     .comot_statement => |stmt| {
                         const value = stmt.value.*;
@@ -195,7 +207,14 @@ pub const Compiler = struct {
                             _ = try self.emit(.OpFalse, &[_]u32{});
                         }
                     },
-
+                    .identifier => |ident| {
+                        const symb = self.symbolTable.lookup(ident.value);
+                        if (symb) |sym| {
+                            _ = try self.emit(code.Opcode.OpGetGlobal, &[_]u32{@intCast(sym.Index)});
+                        } else {
+                            return CompilerErrorType.SymbolTableLookUp;
+                        }
+                    },
                     .infix_expression => |expr| {
                         const left = expr.left.*;
                         const right = expr.right.*;
@@ -289,9 +308,9 @@ pub const Compiler = struct {
                         self.changeOperand(jumpPos, afterAlternativePos);
                     },
 
-                    else => {
-                        return CompilerErrorType.UnsupportedExpression;
-                    },
+                    // else => {
+                    //     return CompilerErrorType.UnsupportedExpression;
+                    // },
                 }
             },
             else => {
