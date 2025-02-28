@@ -143,10 +143,10 @@ pub fn replStart() !void {
 
             const stackElem = vm.LastPoppedStackElem() orelse return error.StackEmpty;
 
-            std.debug.print("\n\n GLOBALS: .{any} \n\n", .{globals});
-            std.debug.print("GLOBALS LENGTH: .{any} \n\n", .{globals.items.len});
-            std.debug.print("CONSTANTS: .{any} \n\n", .{constantPool});
-            std.debug.print("CONSTANTS LENGTH: .{any} \n\n", .{constantPool.items.len});
+            // std.debug.print("\n\n GLOBALS: .{any} \n\n", .{globals});
+            // std.debug.print("GLOBALS LENGTH: .{any} \n\n", .{globals.items.len});
+            // std.debug.print("CONSTANTS: .{any} \n\n", .{constantPool});
+            // std.debug.print("CONSTANTS LENGTH: .{any} \n\n", .{constantPool.items.len});
 
             PrintObject(stackElem);
         } else {
