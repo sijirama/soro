@@ -602,6 +602,7 @@ test "Compiler: Abeg Statements" {
                 try make(allocator, .OpPop, &[_]u32{}),
             },
         },
+
         .{
             .input =
             \\abeg one = 1;
