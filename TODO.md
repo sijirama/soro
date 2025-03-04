@@ -1,3 +1,5 @@
+# currently trying to parse arrays so i'm at parsexpressionList in the parser file ggs
+
 # yet to do or forgot in soro
 
 i'm like fucking lazy bruv
