@@ -77,7 +77,7 @@ pub const Parser = struct {
         parser.registerPrefix(TokenType.BANG, Parser.parsePrefixExpression);
         parser.registerPrefix(TokenType.LPAREN, Parser.parseGroupedExpression);
         parser.registerPrefix(TokenType.ABI, Parser.parseIfExpression);
-        parser.registerPrefix(TokenType.LBRACKET, Parser.parseArrayLiteral);
+        //parser.registerPrefix(TokenType.LBRACKET, Parser.parseArrayLiteral);
 
         // register infix functions
         parser.registerInfix(TokenType.PLUS, Parser.parseInfixExpression);
@@ -768,23 +768,25 @@ pub const Parser = struct {
         return expr;
     }
 
-    pub fn parseArrayLiteral(self: *Parser) ?*ast.Expression {
-        const first_token = self.current_token;
-
-        var array = ast.ArrayLiteral.init(self.arena.allocator(), first_token);
-
-        array.elements = self.parseExpressionList(TokenType.RBRACKET);
-
-        const expr = self.arena.allocator().create(ast.Expression) catch {
-            self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish! I no fit create identifier");
-            return null;
-        };
-
-        expr.* = .{ .array_literal = array }; // Wrap the Identifier in an Expression
-        return expr;
-    }
-
-    pub fn parseExpressionList(self: *Parser) []*ast.Expression {}
+    // pub fn parseArrayLiteral(self: *Parser) ?*ast.Expression {
+    //     const first_token = self.current_token;
+    //
+    //     var array = ast.ArrayLiteral.init(self.arena.allocator(), first_token);
+    //
+    //     array.elements = self.parseExpressionList(TokenType.RBRACKET);
+    //
+    //     const expr = self.arena.allocator().create(ast.Expression) catch {
+    //         self.addError(.InvalidExpression, .Fatal, self.current_token, null, null, "Memory don finish! I no fit create identifier");
+    //         return null;
+    //     };
+    //
+    //     expr.* = .{ .array_literal = array }; // Wrap the Identifier in an Expression
+    //     return expr;
+    // }
+    //
+    // pub fn parseExpressionList(self: *Parser) []*ast.Expression {
+    //     _ = self.current_token;
+    // }
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
     // Infix Functions
