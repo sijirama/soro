@@ -1,0 +1,11 @@
+abeg name = "";
+
+abeg age = 10;
+
+abi( age > 5) {
+	 name = "sijibomi";
+} naso {
+	 name = "francis";
+}
+
+name
