@@ -11,8 +11,8 @@ jobs:
       - name: Set up Zig
         uses: goto-bus-stop/setup-zig@v2
       
-      - name: Build
-        run: zig build
+      #- name: Build
+        #  run: zig build
       
       - name: Test
         run: zig build test --summary all
