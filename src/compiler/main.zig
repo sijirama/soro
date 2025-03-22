@@ -338,9 +338,9 @@ pub const Compiler = struct {
                         self.changeOperand(jumpPos, afterAlternativePos);
                     },
 
-                    // else => {
-                    //     return CompilerErrorType.UnsupportedExpression;
-                    // },
+                    else => {
+                        return CompilerErrorType.UnsupportedExpression;
+                    },
                 }
             },
             else => {

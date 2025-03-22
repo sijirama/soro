@@ -37,7 +37,7 @@ pub const Expression = union(enum) {
     infix_expression: InfixExpression,
 
     if_expression: IfExpression,
-    //array_literal: ArrayLiteral,
+    array_literal: ArrayLiteral,
 
     pub fn tokenLiteral(self: Expression) []const u8 {
         return switch (self) {
@@ -49,7 +49,7 @@ pub const Expression = union(enum) {
             .prefix_expression => |expr| expr.tokenLiteral(),
             .infix_expression => |expr| expr.tokenLiteral(),
             .if_expression => |expr| expr.tokenLiteral(),
-            //.array_literal => |stmt| stmt.tokenLiteral(),
+            .array_literal => |stmt| stmt.tokenLiteral(),
         };
     }
 };
@@ -202,18 +202,18 @@ pub const IfExpression = struct {
     }
 };
 
-// pub const ArrayLiteral = struct {
-//     token: Token,
-//     elements: std.ArrayList(Expression),
-//
-//     pub fn init(allocator: std.mem.Allocator, token: Token) ArrayLiteral {
-//         return .{
-//             .token = token,
-//             .elements = std.ArrayList(Expression).init(allocator),
-//         };
-//     }
-//
-//     pub fn tokenLiteral(self: BlockStatement) []const u8 {
-//         return self.token.value;
-//     }
-// };
+pub const ArrayLiteral = struct {
+    token: Token,
+    elements: std.ArrayList(*Expression),
+
+    pub fn init(allocator: std.mem.Allocator, token: Token) ArrayLiteral {
+        return .{
+            .token = token,
+            .elements = std.ArrayList(*Expression).init(allocator),
+        };
+    }
+
+    pub fn tokenLiteral(self: ArrayLiteral) []const u8 {
+        return self.token.value;
+    }
+};
