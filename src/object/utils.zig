@@ -10,6 +10,13 @@ pub fn printObject(obj: Object) void {
         .ReturnValue => |ret| printObject(ret.value.*),
         .Error => |err| std.debug.print("ERROR: {s}", .{err.message}),
         .String => |str| std.debug.print("{s}", .{str.value}),
+        .Array => |array| {
+            std.debug.print("[ ", .{});
+            for (array.elements) |value| {
+                std.debug.print(" {any} ", .{value});
+            }
+            std.debug.print(" ]", .{});
+        },
     }
     std.debug.print("\n", .{});
 }

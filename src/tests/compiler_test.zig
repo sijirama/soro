@@ -632,3 +632,59 @@ test "Compiler: Abeg Statements" {
 
     try runCompilerTests(allocator, &test_cases);
 }
+
+test "Compiler: Array Literals" {
+    const allocator = testing.allocator;
+
+    const make = code.MakeInstruction;
+
+    const test_cases = [_]CompilerTestCase{
+        .{
+            .input = "[]",
+            .expected_constants = &[_]ExpectedConstant{},
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpArray, &[_]u32{0}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+
+        .{
+            .input = "[1,2,3]",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 1 },
+                .{ .integer = 2 },
+                .{ .integer = 3 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpConstant, &[_]u32{2}),
+                try make(allocator, .OpArray, &[_]u32{3}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+        .{
+            .input = "[true , 2 , 3.5]",
+            .expected_constants = &[_]ExpectedConstant{
+                .{ .integer = 2 },
+                .{ .float = 3.5 },
+            },
+            .expected_instructions = &[_][]const u8{
+                try make(allocator, .OpTrue, &[_]u32{}),
+                try make(allocator, .OpConstant, &[_]u32{0}),
+                try make(allocator, .OpConstant, &[_]u32{1}),
+                try make(allocator, .OpArray, &[_]u32{3}),
+                try make(allocator, .OpPop, &[_]u32{}),
+            },
+        },
+    };
+
+    // Free the test case instructions
+    defer for (test_cases) |test_case| {
+        for (test_case.expected_instructions) |instruction| {
+            allocator.free(instruction);
+        }
+    };
+
+    try runCompilerTests(allocator, &test_cases);
+}

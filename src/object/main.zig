@@ -10,6 +10,7 @@ pub const ObjectType = enum {
     ReturnValue,
     Error,
     String,
+    Array,
     pub fn toString(self: ObjectType) []const u8 {
         return switch (self) {
             .Integer => "INTEGER",
@@ -19,6 +20,7 @@ pub const ObjectType = enum {
             .ReturnValue => "RETURN_VALUE",
             .Error => "ERROR",
             .String => "STRING",
+            .Array => "ARRAY",
         };
     }
 };
@@ -31,6 +33,7 @@ pub const Object = union(ObjectType) {
     ReturnValue: ReturnValue,
     Error: Error,
     String: String,
+    Array: Array,
 };
 
 pub const Integer = struct {
@@ -190,7 +193,7 @@ pub const Error = struct {
 };
 
 pub const Array = struct {
-    elements: []*const Object,
+    elements: []Object,
     is_immutable: bool = false,
 
     pub fn objectType(self: Array) []const u8 {

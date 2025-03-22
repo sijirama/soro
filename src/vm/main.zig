@@ -265,6 +265,22 @@ pub const VM = struct {
         };
     }
 
+    fn BuildArray(self: *VM, startIndex: usize, endIndex: usize) object.Object {
+        // Calculate the number of elements
+        const num_elements = endIndex - startIndex;
+
+        // Allocate a slice of Objects
+        const elements = self.allocator.alloc(object.Object, num_elements) catch unreachable;
+
+        // Copy elements from stack to the array
+        var i: usize = 0;
+        while (i < num_elements) : (i += 1) {
+            elements[i] = self.stack[startIndex + i];
+        }
+
+        return object.Object{ .Array = .{ .elements = elements } };
+    }
+
     pub fn run(self: *VM) !void {
         //std.debug.print("Bytecode: {any}\n", .{self.instructions});
 
@@ -330,6 +346,13 @@ pub const VM = struct {
                     const globalIndex = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
                     ip += 2;
                     try self.push(self.globals.items[globalIndex]);
+                },
+                .OpArray => {
+                    const numElements = std.mem.readInt(u16, self.instructions[ip..][0..2], .big);
+                    ip += 2;
+                    const array = self.BuildArray(self.sp - numElements, numElements);
+                    self.sp = self.sp - numElements;
+                    try self.push(array);
                 },
             }
         }

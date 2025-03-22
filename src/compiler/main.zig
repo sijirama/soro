@@ -228,7 +228,6 @@ pub const Compiler = struct {
                         const const_index = try self.addConstant(constant);
                         _ = try self.emit(code.Opcode.OpConstant, &[_]u32{@intCast(const_index)});
                     },
-
                     .boolean_literal => |lit| {
                         const constant = object.Object{ .Boolean = .{ .value = lit.value } };
                         if (constant.Boolean.value) {
@@ -337,10 +336,17 @@ pub const Compiler = struct {
                         const afterAlternativePos = self.instructions.items.len;
                         self.changeOperand(jumpPos, afterAlternativePos);
                     },
+                    .array_literal => |expr| {
+                        for (expr.elements.items) |expr_item| {
+                            try self.compile(expr_item.*);
+                        }
 
-                    else => {
-                        return CompilerErrorType.UnsupportedExpression;
+                        _ = try self.emit(.OpArray, &[_]u32{@intCast(expr.elements.items.len)});
                     },
+
+                    // else => {
+                    //     return CompilerErrorType.UnsupportedExpression;
+                    // },
                 }
             },
             else => {

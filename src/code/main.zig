@@ -48,6 +48,8 @@ pub const Opcode = enum(OpcodeType) {
     // bindings bitch
     OpGetGlobal,
     OpSetGlobal,
+
+    OpArray,
 };
 
 /// Defines the metadata for an opcode, such as its name and operand widths.
@@ -95,6 +97,8 @@ pub const definitions = std.EnumMap(Opcode, OpcodeDefinition).init(.{
     // bindings biatchhhhhhh
     .OpGetGlobal = .{ .Name = "OpGetGlobal", .OperandWidths = &[_]u8{2} },
     .OpSetGlobal = .{ .Name = "OpSetGlobal", .OperandWidths = &[_]u8{2} },
+
+    .OpArray = .{ .Name = "OpArray", .OperandWidths = &[_]u8{2} },
 });
 
 /// Looks up the definition of an opcode by its numeric value.
