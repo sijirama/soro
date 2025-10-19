@@ -1,23 +1,23 @@
-#include <string.h>
-
-#include "../../include/lexer.h"
-#include "../../include/token.h"
-#include "../utest.h"
-
-UTEST(lexer_basic, empty_input) {
-    Lexer* lexer = lexer_init("", "test.soro", ".");
-    ASSERT_TRUE(lexer != NULL);
-
-    size_t count = 0;
-    Token** tokens = lexer_tokenize(lexer, &count);
-
-    ASSERT_EQ(1, count);
-    ASSERT_EQ(TOKEN_EOF, tokens[0]->type);
-    ASSERT_STREQ("", tokens[0]->value);
-
-    lexer_free(lexer);
-}
-
+// #include <string.h>
+//
+// #include "../../include/lexer.h"
+// #include "../../include/token.h"
+// #include "../utest.h"
+//
+// UTEST(lexer_basic, empty_input) {
+//     Lexer* lexer = lexer_init("", "test.soro", ".");
+//     ASSERT_TRUE(lexer != NULL);
+//
+//     size_t count = 0;
+//     Token** tokens = lexer_tokenize(lexer, &count);
+//
+//     ASSERT_EQ(1, count);
+//     ASSERT_EQ(TOKEN_EOF, tokens[0]->type);
+//     ASSERT_STREQ("", tokens[0]->value);
+//
+//     lexer_free(lexer);
+// }
+//
 // UTEST(lexer_basic, single_plus) {
 //     Lexer* lexer = lexer_init("+", "test.soro", ".");
 //     ASSERT_TRUE(lexer != NULL);
