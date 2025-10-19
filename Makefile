@@ -1,68 +1,61 @@
-# Variables
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -I include
+CFLAGS = -Wall -Wextra -std=c11 -I include -g
 LDFLAGS = -lm
 
-# Directories
 SRC_DIR = src
 INC_DIR = include
 TEST_DIR = tests
 BUILD_DIR = build
+EXAMPLE_DIR = examples
 
 TARGET = soro
 TEST_TARGET = test_soro
 
-# Source files
-SRCS = $(filter-out $(SRC_DIR)/main.c, $(wildcard $(SRC_DIR)/*.c))
+# Source files (recursively find all .c files except main.c)
+SRCS = $(shell find $(SRC_DIR) -name '*.c' ! -name 'main.c')
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 MAIN_OBJ = $(BUILD_DIR)/main.o
 
-# Test files
-TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
+# Test files (recursively find all test .c files)
+TEST_SRCS = $(shell find $(TEST_DIR) -name '*.c')
 TEST_OBJS = $(TEST_SRCS:$(TEST_DIR)/%.c=$(BUILD_DIR)/test_%.o)
 
-# Default target
 all: $(TARGET)
 
-# Build main executable
 $(TARGET): $(OBJS) $(MAIN_OBJ)
 	@echo "Linking $@..."
 	@$(CC) $^ -o $@ $(LDFLAGS)
 
-# Compile source files
+# Compile source files (create subdirectories as needed)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile test files
+# Compile test files (create subdirectories as needed)
 $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
+	@mkdir -p $(dir $@)
 	@echo "Compiling $<..."
 	@$(CC) $(CFLAGS) -I $(TEST_DIR) -c $< -o $@
 
-# Build test executable
 $(TEST_TARGET): $(OBJS) $(TEST_OBJS)
 	@echo "Linking $@..."
 	@$(CC) $^ -o $@ $(LDFLAGS)
 
-# Create build directory
 $(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)/lexer $(BUILD_DIR)/test_lexer
 
-# Run tests
 test: $(TEST_TARGET)
 	@echo "Running tests..."
 	@./$(TEST_TARGET)
 
-# Run the compiler
 run: $(TARGET)
-	@./$(TARGET)
+	@./$(TARGET) $(EXAMPLE_DIR)/hello.soro
 
-# Clean build artifacts
 clean:
 	@echo "Cleaning..."
 	@rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
 
-# Rebuild everything
 rebuild: clean all
 
 .PHONY: all test run clean rebuild

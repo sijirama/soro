@@ -1,0 +1,4 @@
+// Simple hello world
+abeg message string = "Hello from Soro!";
+abeg number int = 42;
+abeg price float = 99.5;

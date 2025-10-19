@@ -1,0 +1,8 @@
+abeg five int = 5;
+abeg ten = 10;
+
+oya add(x int, y int) : int {
+    comot x + y;
+}
+
+abeg result int = add(5, 10);

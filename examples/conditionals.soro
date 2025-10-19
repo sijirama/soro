@@ -1,0 +1,8 @@
+abi (5 < 10) {
+    comot true;
+} naso {
+    comot false;
+}
+
+10 == 10;
+10 != 9;
