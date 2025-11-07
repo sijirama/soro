@@ -318,6 +318,36 @@ UTEST(lexer_numbers, array_of_numbers) {
     lexer_free(lexer);
 }
 
+UTEST(lexer_numbers, multi_dimensional_array) {
+    const char* input = "[[1, 2], [3, 4]]";
+    Lexer* lexer = lexer_init(input, "test.soro", ".");
+    size_t count = 0;
+    Token** tokens = lexer_tokenize(lexer, &count);
+
+    ASSERT_EQ(14, count);
+
+    int i = 0;
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);  // [
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);  // [
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);     // 1
+    ASSERT_STREQ("1", tokens[i++]->value);
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);  // ,
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);  // 2
+    ASSERT_STREQ("2", tokens[i++]->value);
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);  // ]
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);     // ,
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);  // [
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);     // 3
+    ASSERT_STREQ("3", tokens[i++]->value);
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);  // ,
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);  // 4
+    ASSERT_STREQ("4", tokens[i++]->value);
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);  // ]
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);  // ]
+
+    lexer_free(lexer);
+}
+
 // --------------------------------------------------------------------------------------------
 
 UTEST(lexer_strings, simple_double_quote) {
@@ -372,6 +402,72 @@ UTEST(lexer_strings, multiple_strings) {
 
     ASSERT_EQ(TOKEN_STRING, tokens[1]->type);
     ASSERT_STREQ("foo bar", tokens[1]->value);
+
+    lexer_free(lexer);
+}
+
+UTEST(lexer_numbers, mixed_numbers_strings_array) {
+    const char* input = "[[1, \"hello\", 3.14], [\"world\", 42]]";
+    Lexer* lexer = lexer_init(input, "test.soro", ".");
+    size_t count = 0;
+    Token** tokens = lexer_tokenize(lexer, &count);
+
+    ASSERT_EQ(16, count);
+
+    int i = 0;
+
+    // Outer [
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);
+
+    // Inner [
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);
+
+    // 1
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);
+    ASSERT_STREQ("1", tokens[i++]->value);
+
+    // ,
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);
+
+    // "hello"
+    ASSERT_EQ(TOKEN_STRING, tokens[i]->type);
+    ASSERT_STREQ("hello", tokens[i++]->value);
+
+    // ,
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);
+
+    // 3.14
+    ASSERT_EQ(TOKEN_FLOAT, tokens[i]->type);
+    ASSERT_STREQ("3.14", tokens[i++]->value);
+
+    // ]
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);
+
+    // ,
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);
+
+    // Inner [
+    ASSERT_EQ(TOKEN_LBRACKET, tokens[i++]->type);
+
+    // "world"
+    ASSERT_EQ(TOKEN_STRING, tokens[i]->type);
+    ASSERT_STREQ("world", tokens[i++]->value);
+
+    // ,
+    ASSERT_EQ(TOKEN_COMMA, tokens[i++]->type);
+
+    // 42
+    ASSERT_EQ(TOKEN_INTEGER, tokens[i]->type);
+    ASSERT_STREQ("42", tokens[i++]->value);
+
+    // ]
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);
+
+    // Outer ]
+    ASSERT_EQ(TOKEN_RBRACKET, tokens[i++]->type);
+
+    // EOF (assuming your lexer includes it)
+    ASSERT_EQ(TOKEN_EOF, tokens[i++]->type);
 
     lexer_free(lexer);
 }

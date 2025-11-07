@@ -9,8 +9,8 @@
 #include "../../include/error.h"
 
 // Helper macros
-#define INITIAL_TOKEN_CAPACITY 256
-#define INITIAL_STRING_CAPACITY 64
+#define INITIAL_TOKEN_CAPACITY 512
+#define INITIAL_STRING_CAPACITY 128
 
 // Helper functions (forward declarations)
 static char current_char(Lexer* lexer);
