@@ -25,7 +25,6 @@ static Token* read_string(Lexer* lexer);
 static Token* read_identifier(Lexer* lexer);
 static Token* read_slash_or_comment(Lexer* lexer);
 static Token* create_token(Lexer* lexer, TokenType type, const char* value);
-static void add_string_allocation(Lexer* lexer, char* str);
 
 Lexer* lexer_init(const char* input, const char* file_name, const char* file_directory) {
     Lexer* lexer = malloc(sizeof(Lexer));
@@ -292,7 +291,6 @@ static Token* read_number(Lexer* lexer) {
 
     size_t len = lexer->position - start;
     char* num_str = strndup(lexer->input + start, len);
-    add_string_allocation(lexer, num_str);
 
     Token* token = token_create(has_decimal ? TOKEN_FLOAT : TOKEN_INTEGER, num_str, start_line,
                                 start_column, lexer->file_name, lexer->file_directory);
@@ -317,7 +315,6 @@ static Token* read_string(Lexer* lexer) {
         if(ch == quote) {
             advance(lexer, 1);  // Skip closing quote
             buffer[len] = '\0';
-            add_string_allocation(lexer, buffer);
 
             Token* token = token_create(TOKEN_STRING, buffer, start_line, start_column,
                                         lexer->file_name, lexer->file_directory);
@@ -418,7 +415,6 @@ static Token* read_slash_or_comment(Lexer* lexer) {
 
         size_t len = lexer->position - comment_start;
         char* comment = strndup(lexer->input + comment_start, len);
-        add_string_allocation(lexer, comment);
 
         Token* token = token_create(TOKEN_COMMENT, comment, start_line, start_column,
                                     lexer->file_name, lexer->file_directory);
@@ -434,7 +430,6 @@ static Token* read_slash_or_comment(Lexer* lexer) {
             if(current_char(lexer) == '*' && peek_char(lexer, 1) == '/') {
                 size_t len = lexer->position - comment_start;
                 char* comment = strndup(lexer->input + comment_start, len);
-                add_string_allocation(lexer, comment);
 
                 advance(lexer, 2);  // consume '*/'
 
@@ -459,13 +454,4 @@ static Token* read_slash_or_comment(Lexer* lexer) {
 static Token* create_token(Lexer* lexer, TokenType type, const char* value) {
     return token_create(type, value, lexer->line, lexer->column, lexer->file_name,
                         lexer->file_directory);
-}
-
-static void add_string_allocation(Lexer* lexer, char* str) {
-    if(lexer->string_count >= lexer->string_capacity) {
-        lexer->string_capacity *= 2;
-        lexer->string_allocations =
-            realloc(lexer->string_allocations, sizeof(char*) * lexer->string_capacity);
-    }
-    lexer->string_allocations[lexer->string_count++] = str;
 }
