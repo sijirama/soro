@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -I include -g
+CFLAGS = -std=c11 -I include -g
 LDFLAGS = -lm
 
 SRC_DIR = src
@@ -39,7 +39,7 @@ $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c | $(BUILD_DIR)
 	@$(CC) $(CFLAGS) -I $(TEST_DIR) -c $< -o $@
 
 $(TEST_TARGET): $(OBJS) $(TEST_OBJS)
-	@echo "Linking $@..."
+	@echo "Linking $@..gg."
 	@$(CC) $^ -o $@ $(LDFLAGS)
 
 $(BUILD_DIR):

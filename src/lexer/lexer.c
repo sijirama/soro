@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "../../include/lexer.h"
 
 #include <ctype.h>
@@ -295,6 +296,7 @@ static Token* read_number(Lexer* lexer) {
 
     Token* token = token_create(has_decimal ? TOKEN_FLOAT : TOKEN_INTEGER, num_str, start_line,
                                 start_column, lexer->file_name, lexer->file_directory);
+    free(num_str);
     return token;
 }
 

@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "../../include/token.h"
 
 #include <stdlib.h>
@@ -45,17 +47,18 @@ static const char* token_type_strings[] = {
 
 Token* token_create(TokenType type, const char* value, uint32_t line, uint32_t column,
                     const char* file_name, const char* file_directory) {
+    // INFO: Always duplicate in token_create
+
     Token* token = malloc(sizeof(Token));
     if(!token)
         return NULL;
 
     token->type = type;
-    token->value = value ? strdup(value) : strdup("");
+    token->value = strdup(value);  // Duplicate!
     token->line = line;
     token->column = column;
-    token->file_name = file_name ? strdup(file_name) : NULL;
-    token->file_directory = file_directory ? strdup(file_directory) : NULL;
-
+    token->file_name = strdup(file_name);            // Duplicate!
+    token->file_directory = strdup(file_directory);  // Duplicate!
     return token;
 }
 
