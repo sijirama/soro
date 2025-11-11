@@ -34,6 +34,7 @@ static const char* token_type_strings[] = {
     [TOKEN_RBRACKET] = "RBRACKET",
     [TOKEN_ABEG] = "ABEG",
     [TOKEN_OYA] = "OYA",
+    [TOKEN_WAKA] = "WAKA",
     [TOKEN_COMOT] = "COMOT",
     [TOKEN_ABI] = "ABI",
     [TOKEN_NASO] = "NASO",
@@ -84,6 +85,8 @@ TokenType token_lookup_keyword(const char* ident) {
         return TOKEN_ABEG;
     if(strcmp(ident, "oya") == 0)
         return TOKEN_OYA;
+    if(strcmp(ident, "waka") == 0)
+        return TOKEN_WAKA;
     if(strcmp(ident, "comot") == 0)
         return TOKEN_COMOT;
     if(strcmp(ident, "abi") == 0)
