@@ -1,4 +1,4 @@
-
+#define _POSIX_C_SOURCE 200809L
 #include "../../include/parser/parser.h"
 
 #include <stdio.h>
