@@ -500,6 +500,8 @@ Stmt* parse_function_declaration(Parser* parser) {
         }
     }
 
+    consume(parser, TOKEN_LBRACE, "Expected '{' before function body");
+
     // Parse body
     Stmt* body = parse_block_statement(parser);
 
