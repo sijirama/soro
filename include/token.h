@@ -43,7 +43,7 @@ typedef enum {
     // Keywords (Pidgin English)
     TOKEN_ABEG,   // let/var
     TOKEN_OYA,    // function
-    TOKEN_WAKA,    // function
+    TOKEN_WAKA,   // function
     TOKEN_COMOT,  // return
     TOKEN_ABI,    // if
     TOKEN_NASO,   // else

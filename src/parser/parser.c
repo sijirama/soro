@@ -85,7 +85,7 @@ void parser_error(Parser* parser, const char* message) {
     parser->had_error = true;
 
     Token* token = previous(parser);
-    fprintf(stderr, "[%s:%zu] Error at '%s': %s\n", parser->filename, token->line, token->value,
+    fprintf(stderr, "[%s:%u] Error at '%s': %s\n", parser->filename, token->line, token->value,
             message);
 }
 
@@ -96,7 +96,7 @@ void parser_error_at_current(Parser* parser, const char* message) {
     parser->had_error = true;
 
     Token* token = peek(parser);
-    fprintf(stderr, "[%s:%zu] Error at '%s': %s\n", parser->filename, token->line, token->value,
+    fprintf(stderr, "[%s:%u] Error at '%s': %s\n", parser->filename, token->line, token->value,
             message);
 }
 
@@ -109,7 +109,7 @@ void synchronize(Parser* parser) {
 
         switch(peek(parser)->type) {
             case TOKEN_ABEG:   // let/var
-            case TOKEN_OYA:    // loop
+            case TOKEN_WAKA:   // loop
             case TOKEN_ABI:    // if
             case TOKEN_COMOT:  // return
             case TOKEN_TYPE:   // type declaration
@@ -124,14 +124,18 @@ void synchronize(Parser* parser) {
 // ===== Pratt Parsing - Expressions =====
 
 // Forward declarations
-static Expr* parse_grouping(Parser* parser);
-static Expr* parse_literal(Parser* parser);
-static Expr* parse_variable(Parser* parser);
-static Expr* parse_unary(Parser* parser);
-static Expr* parse_array(Parser* parser);
-static Expr* parse_binary(Parser* parser, Expr* left);
-static Expr* parse_call(Parser* parser, Expr* left);
-static Expr* parse_index(Parser* parser, Expr* left);
+
+// Prefix parse functions
+static Expr* parse_grouping(Parser* parser);  // ( expr )
+static Expr* parse_literal(Parser* parser);   // 42, 3.14, "hello", true
+static Expr* parse_variable(Parser* parser);  // identifier
+static Expr* parse_unary(Parser* parser);     // -expr, !expr
+static Expr* parse_array(Parser* parser);     // [1, 2, 3]
+
+// Infix parse functions
+static Expr* parse_binary(Parser* parser, Expr* left);  // left + right
+static Expr* parse_call(Parser* parser, Expr* left);    // func(args)
+static Expr* parse_index(Parser* parser, Expr* left);   // arr[index]
 static Expr* parse_assign(Parser* parser, Expr* left);
 
 // Parse rule table - maps token types to parsing functions
@@ -409,7 +413,7 @@ Stmt* parse_declaration(Parser* parser) {
         return parse_var_declaration(parser);
     }
     if(match(parser, TOKEN_OYA)) {
-        return parse_function_declaration(parser)
+        return parse_function_declaration(parser);
     }
 
     return parse_statement(parser);

@@ -20,16 +20,6 @@ typedef enum {
     PREC_PRIMARY
 } Precedence;
 
-// Function pointer types for Pratt parsing
-typedef Expr* (*PrefixParseFn)(struct Parser* parser);
-typedef Expr* (*InfixParseFn)(struct Parser* parser, Expr* left);
-
-typedef struct {
-    PrefixParseFn prefix;
-    InfixParseFn infix;
-    Precedence precedence;
-} ParseRule;
-
 typedef struct Parser {
     Token** tokens;
     size_t current;
@@ -42,6 +32,16 @@ typedef struct Parser {
     // For error messages
     const char* filename;
 } Parser;
+
+// Function pointer types for Pratt parsing
+typedef Expr* (*PrefixParseFn)(Parser* parser);
+typedef Expr* (*InfixParseFn)(Parser* parser, Expr* left);
+
+typedef struct {
+    PrefixParseFn prefix;
+    InfixParseFn infix;
+    Precedence precedence;
+} ParseRule;
 
 // ===== Parser Lifecycle =====
 Parser* parser_init(Token** tokens, size_t count, const char* filename);
@@ -66,29 +66,17 @@ void synchronize(Parser* parser);
 // ===== Recursive Descent - Statements =====
 Stmt* parse_statement(Parser* parser);
 Stmt* parse_declaration(Parser* parser);
-Stmt* parse_var_declaration(Parser* parser);  // abeg x = 5
-Stmt* parse_if_statement(Parser* parser);      // abi (cond) { }
-Stmt* parse_while_statement(Parser* parser);   // waka (cond) { }
-Stmt* parse_function_declaration(Parser* parser); // oya name(params) { }
-Stmt* parse_return_statement(Parser* parser);  // comot expr
-Stmt* parse_block_statement(Parser* parser);   // { stmts }
+Stmt* parse_var_declaration(Parser* parser);       // abeg x = 5
+Stmt* parse_if_statement(Parser* parser);          // abi (cond) { }
+Stmt* parse_while_statement(Parser* parser);       // waka (cond) { }
+Stmt* parse_function_declaration(Parser* parser);  // oya name(params) { }
+Stmt* parse_return_statement(Parser* parser);      // comot expr
+Stmt* parse_block_statement(Parser* parser);       // { stmts }
 Stmt* parse_expression_statement(Parser* parser);
 
 // ===== Pratt Parsing - Expressions =====
 Expr* parse_expression(Parser* parser);
 Expr* parse_precedence(Parser* parser, Precedence precedence);
-
-// Prefix parse functions
-Expr* parse_grouping(Parser* parser);  // ( expr )
-Expr* parse_literal(Parser* parser);   // 42, 3.14, "hello", true
-Expr* parse_variable(Parser* parser);  // identifier
-Expr* parse_unary(Parser* parser);     // -expr, !expr
-Expr* parse_array(Parser* parser);     // [1, 2, 3]
-
-// Infix parse functions
-Expr* parse_binary(Parser* parser, Expr* left);  // left + right
-Expr* parse_call(Parser* parser, Expr* left);    // func(args)
-Expr* parse_index(Parser* parser, Expr* left);   // arr[index]
 
 // Helper
 ParseRule* get_rule(TokenType type);

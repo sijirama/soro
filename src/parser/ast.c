@@ -145,39 +145,6 @@ static void print_indent(int indent) {
     }
 }
 
-static const char* token_type_to_string(TokenType type) {
-    switch(type) {
-        case TOKEN_PLUS:
-            return "+";
-        case TOKEN_MINUS:
-            return "-";
-        case TOKEN_ASTERISK:
-            return "*";
-        case TOKEN_SLASH:
-            return "/";
-        case TOKEN_BANG:
-            return "!";
-        case TOKEN_EQUAL:
-            return "==";
-        case TOKEN_NOT_EQUAL:
-            return "!=";
-        case TOKEN_LESS_THAN:
-            return "<";
-        case TOKEN_GREATER_THAN:
-            return ">";
-        case TOKEN_AND:
-            return "and";
-        case TOKEN_OR:
-            return "or";
-        case TOKEN_OR_ELSE:
-            return "orelse";
-        case TOKEN_ASSIGN:
-            return "=";
-        default:
-            return "?";
-    }
-}
-
 void ast_print_expr(Expr* expr, int indent) {
     if(!expr) {
         print_indent(indent);
