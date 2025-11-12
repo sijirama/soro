@@ -437,7 +437,16 @@ Stmt* parse_var_declaration(Parser* parser) {
     if(match(parser, TOKEN_COLON)) {
         Token* type = consume(parser, TOKEN_TYPE, "Expected type after ':'");
         if(type) {
-            stmt->as.var_decl.type_annotation = strdup(type->value);
+            char buffer[64];
+            strcpy(buffer, type->value);
+
+            // Support array types like int[]
+            while(match(parser, TOKEN_LBRACKET)) {
+                consume(parser, TOKEN_RBRACKET, "Expected ']' after '[' in type annotation");
+                strcat(buffer, "[]");
+            }
+
+            stmt->as.var_decl.type_annotation = strdup(buffer);
         }
     }
 
